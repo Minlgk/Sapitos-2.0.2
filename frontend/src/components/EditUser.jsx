@@ -6,6 +6,8 @@ import axios from "axios";
 const EditUserLayer = () => {
   const { userId } = useParams();
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
+
   const [usuario, setUsuario] = useState({
     nombre: "",
     correo: "",
@@ -36,7 +38,7 @@ const EditUserLayer = () => {
       if (!userId) return;
       try {
         setLoadingData(true);
-        const response = await axios.get(`http://localhost:5000/users/getUsers`, {
+        const response = await axios.get(`${API_BASE_URL}/users/getUsers`, {
           withCredentials: true,
         });
         const usuarioEncontrado = response.data.find(user => user.correo === userId);
@@ -66,7 +68,7 @@ const EditUserLayer = () => {
 
     const fetchLocations = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/location2", {
+        const res = await axios.get(`${API_BASE_URL}/location2`, {
           withCredentials: true,
         });
         setLocations(res.data);
@@ -114,7 +116,7 @@ const EditUserLayer = () => {
         datosActualizacion.imagen = imagePreviewUrl;
       }
 
-      await axios.put(`http://localhost:5000/users/updateUser`, datosActualizacion, {
+      await axios.put(`${API_BASE_URL}/users/updateUser`, datosActualizacion, {
         withCredentials: true,
       });
 

@@ -8,6 +8,7 @@ const SalesStatisticOne = ({ locationId = "all" }) => {
   const chartContainerRef = useRef(null);
   const [filter, setFilter] = useState(() => localStorage.getItem('graphFilter') || 'yearly');
   const [graphData, setGraphData] = useState([]);
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
   
   const [chartOptions, setChartOptions] = useState({});
   const [chartSeries, setChartSeries] = useState([]);
@@ -37,7 +38,7 @@ const SalesStatisticOne = ({ locationId = "all" }) => {
           queryParams += `&locationId=${locationId}`;
         }
 
-        const res = await fetch(`http://localhost:5000/kpi/unidades-vendidas-graph?${queryParams}`);
+        const res = await fetch(`${API_BASE_URL}/kpi/unidades-vendidas-graph?${queryParams}`);
         const data = await res.json();
         setGraphData(data);
         setSelectedPoint(null); // Reset selection on filter change

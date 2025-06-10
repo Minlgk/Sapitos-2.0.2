@@ -10,6 +10,7 @@ import {
 } from "react-icons/fa";
 
 const Usuarios = () => {
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
   const [usuarios, setUsuarios] = useState([]);
   const [rolesMap, setRolesMap] = useState({});
   const [nuevoUsuario, setNuevoUsuario] = useState({ 
@@ -26,8 +27,8 @@ const Usuarios = () => {
     const fetchData = async () => {
       try {
         const [usuariosRes, rolesRes] = await Promise.all([
-          axios.get('http://localhost:5000/users/getUsers'),
-          axios.get('http://localhost:5000/rol/getRoles'),
+          axios.get(`${API_BASE_URL}/users/getUsers`),
+          axios.get(`${API_BASE_URL}/rol/getRoles`),
         ]);
 
         const rolesDict = {};
@@ -65,7 +66,7 @@ const Usuarios = () => {
 
   const agregarUsuario = async () => {
     try {
-      await axios.post('http://localhost:5000/users/register', nuevoUsuario); 
+      await axios.post(`${API_BASE_URL}/users/register`, nuevoUsuario); 
       setNuevoUsuario({ nombre: "", correo: "", organizacion: "", contrasena: "", rol: "", diasordenprom: 0, valorordenprom: 0 });
       setShowModal(false);
       window.location.reload(); // para refrescar y volver a cargar roles también
@@ -77,7 +78,7 @@ const Usuarios = () => {
 
   const eliminarUsuario = async (correo) => {
     try {
-      await axios.delete('http://localhost:5000/users/deleteUser', { data: { correo } });
+      await axios.delete(`${API_BASE_URL}/users/deleteUser`, { data: { correo } });
       window.location.reload();
     } catch (error) {
       console.error("Error al eliminar usuario:", error);
@@ -103,7 +104,7 @@ const Usuarios = () => {
 
   const guardarCambios = async () => {
     try {
-      await axios.put('http://localhost:5000/users/updateUser', usuarioEditando);
+      await axios.put(`${API_BASE_URL}/users/updateUser`, usuarioEditando);
       setShowModal(false);
       setUsuarioEditando(null);
       window.location.reload();

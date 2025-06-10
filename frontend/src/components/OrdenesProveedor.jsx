@@ -107,12 +107,9 @@ const OrdenesProveedor = () => {
   return (
     <>
       {/* Sección de Pedidos Pendientes */}
-      <div className="card h-100 p-0 radius-12">
+      <div className="card h-100 p-0 radius-12 mt-4">
         <div className="card-header d-flex justify-content-between align-items-center py-16 px-24">
-          <div className="d-flex align-items-center gap-3">
-            <Icon icon="mdi:clipboard-list-outline" className="text-primary me-2 text-xl" />
-            <span className="text-md fw-medium mb-0">Pedidos Pendientes</span>
-          </div>
+          <span className="text-md fw-medium mb-0">Pedidos Pendientes</span>
         </div>
         
         <div className="card-body p-24">
@@ -124,75 +121,53 @@ const OrdenesProveedor = () => {
             </div>
           ) : pedidos.length > 0 ? (
             <div className="table-responsive scroll-sm">
-              <table className="table bordered-table mb-0">
-                <thead>
-                  <tr>
-                    <th>ID Pedido</th>
-                    <th>Cliente</th>
-                    <th>Producto</th>
-                    <th>Fecha</th>
-                    <th>Cantidad</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pedidos.map((pedido) => (
-                    <tr key={pedido.idOriginal}>
-                      <td className="align-middle">{pedido.id}</td>
-                      <td className="align-middle">
-                        <div className="d-flex flex-column">
-                          <span className="fw-medium">{pedido.cliente}</span>
-                          <small className="text-muted">{pedido.email}</small>
-                        </div>
-                      </td>
-                      <td className="align-middle">{pedido.producto}</td>
-                      <td className="align-middle">{pedido.fecha}</td>
-                      <td className="align-middle fw-medium">${pedido.cantidad}</td>
-                      <td className="align-middle">
-                        <span className="px-12 py-1 rounded-pill fw-medium text-xs bg-warning-focus text-warning-main">
-                          Pendiente
-                        </span>
-                      </td>
-                      <td className="align-middle">
-                        <div className="d-flex gap-2">
-                          <button 
-                            onClick={() => aceptarPedido(pedido.idOriginal)}
-                            className='w-32-px h-32-px bg-success-focus text-success-main rounded-circle d-inline-flex align-items-center justify-content-center'
-                            style={{ border: 'none' }}
-                            title="Aceptar pedido"
-                          >
-                            <Icon icon='mdi:check-bold' width="20" height="20" />
-                          </button>
-                          <button 
-                            onClick={() => rechazarPedido(pedido.idOriginal)}
-                            className='w-32-px h-32-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center'
-                            style={{ border: 'none' }}
-                            title="Rechazar pedido"
-                          >
-                            <Icon icon='mingcute:close-circle-line' width="20" height="20" />
-                          </button>
-                          <button 
-                            onClick={() => showDetails(pedido)}
-                            className='w-32-px h-32-px bg-primary-light text-primary-600 rounded-circle d-inline-flex align-items-center justify-content-center'
-                            style={{ border: 'none' }}
-                            title="Ver detalles"
-                          >
-                            <Icon icon='iconamoon:eye-light' width="20" height="20" />
-                          </button>
-                        </div>
-                      </td>
+              <table className="table bordered-table sm-table mb-0">
+                  <thead>
+                    <tr>
+                      <th>ID Pedido</th>
+                      <th>Cliente</th>
+                      <th>Producto</th>
+                      <th>Fecha</th>
+                      <th>Cantidad</th>
+                      <th>Acciones</th>
                     </tr>
-                  ))}
-                </tbody>
+                  </thead>
+                  <tbody>
+                    {pedidos.map((pedido) => (
+                       <tr key={pedido.idOriginal}>
+                         <td className="align-middle">{pedido.id}</td>
+                         <td className="align-middle"><h6 className="text-md mb-0 fw-medium">{pedido.cliente}</h6></td>
+                         <td className="align-middle">{pedido.producto}</td>
+                         <td className="align-middle">{pedido.fecha}</td>
+                         <td className="align-middle">{pedido.cantidad} unidades</td>
+                         <td className="align-middle d-flex align-items-center">
+                          <button
+                            type="button"
+                            onClick={() => aceptarPedido(pedido.idOriginal)}
+                            className="w-24-px h-24-px me-4 bg-success-focus text-success-main rounded-circle d-inline-flex align-items-center justify-content-center"
+                            style={{ border: 'none' }}
+                            title="Marcar como En Reparto"
+                          >
+                            <Icon icon="mdi:truck-delivery" width="20" height="20" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => rechazarPedido(pedido.idOriginal)}
+                            className="w-24-px h-24-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center"
+                            style={{ border: 'none' }}
+                            title="Rechazar Pedido"
+                          >
+                            <Icon icon="mdi:close-circle-outline" width="20" height="20" />
+                          </button>
+                         </td>
+                       </tr>
+                    ))}
+                   </tbody>
               </table>
             </div>
           ) : (
             <div className="alert alert-info mb-0 text-center py-3">
-              <div className="d-flex flex-column align-items-center gap-2">
-                <Icon icon="mdi:clipboard-text-off-outline" className="text-muted text-4xl" />
-                No tienes pedidos pendientes por aceptar
-              </div>
+              No tienes pedidos pendientes por aceptar
             </div>
           )}
         </div>

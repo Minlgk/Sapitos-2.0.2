@@ -9,12 +9,13 @@ const InvoicePreview = () => {
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState({ nombre: '', rol: '', email: '' });
-
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
+  
   useEffect(() => {
     const fetchSession = async () => {
       try {
-        const response = await fetch('http://localhost:5000/users/getSession', {
-          credentials: 'include' // equivalent to withCredentials: true
+        const response = await fetch(`${API_BASE_URL}/users/getSession`, {
+          credentials: 'include' 
         });
         
         const data = await response.json();
@@ -40,11 +41,11 @@ const InvoicePreview = () => {
       
       try {
         // Fetch order information
-        const pedidoResponse = await fetch(`http://localhost:5000/pedido/${id}/detalles`);
+        const pedidoResponse = await fetch(`${API_BASE_URL}/pedido/${id}/detalles`);
         const orderData = await pedidoResponse.json();
         
         // Fetch product details
-        const productosResponse = await fetch(`http://localhost:5000/pedido/${id}/detalles`);
+        const productosResponse = await fetch(`${API_BASE_URL}/pedido/${id}/detalles`);
         const productosData = await productosResponse.json();
         
         const productosFormateados = productosData.map(producto => ({
@@ -56,7 +57,6 @@ const InvoicePreview = () => {
           total: parseFloat(producto.TOTAL)
         }));
         
-        // Use actual data from the API or fallback to defaults
         const orderDetails = {
           id: id,
           fechaCreacion: orderData.fechaCreacion || new Date(),

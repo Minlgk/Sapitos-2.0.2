@@ -5,12 +5,13 @@ import UserMenu from "../../general/userMenu";
 const NavbarHeader = ({ sidebarActive, sidebarControl, mobileMenuControl }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
   const [userLocation, setUserLocation] = useState(null);
 
   useEffect(() => {
     const fetchUserSession = async () => {
       try {
-        const response = await fetch('http://localhost:5000/users/getSession', {
+        const response = await fetch(`${API_BASE_URL}/users/getSession`, {
           method: 'GET',
           credentials: 'include',
           headers: {
@@ -37,7 +38,7 @@ const NavbarHeader = ({ sidebarActive, sidebarControl, mobileMenuControl }) => {
 
           // Fetch location details if user has a location ID
           if (formattedUserData.LOCATION_ID) {
-            const locationResponse = await fetch(`http://localhost:5000/location2/${formattedUserData.LOCATION_ID}`);
+            const locationResponse = await fetch(`${API_BASE_URL}/location2/${formattedUserData.LOCATION_ID}`);
             if (locationResponse.ok) {
               const locationData = await locationResponse.json();
               setUserLocation(locationData);
@@ -58,6 +59,13 @@ const NavbarHeader = ({ sidebarActive, sidebarControl, mobileMenuControl }) => {
     fetchUserSession();
   }, []);
 
+  // Construir la ruta de la imagen de perfil usando el correo del usuario
+  let profileImage = "assets/images/user.png";
+  if (userData?.CORREO) {
+    profileImage = `${API_BASE_URL}/users/${encodeURIComponent(userData.CORREO)}/profileImage`;
+  }
+
+  // Mostrar loading mientras se obtiene la sesión
   if (loading) {
     return (
       <div className="navbar-header" id="navbarHeader">
@@ -84,11 +92,6 @@ const NavbarHeader = ({ sidebarActive, sidebarControl, mobileMenuControl }) => {
         </div>
       </div>
     );
-  }
-
-  let profileImage = "assets/images/user.png";
-  if (userData?.CORREO) {
-    profileImage = `http://localhost:5000/users/${encodeURIComponent(userData.CORREO)}/profileImage`;
   }
 
   return (

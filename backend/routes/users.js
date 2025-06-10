@@ -239,24 +239,19 @@ router.post("/logoutUser", logoutUser);
 
 /**
  * @swagger
- * /users/deleteUser:
+ * /users/deleteUser/{correo}:
  *   delete:
  *     summary: Delete a specific user
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - correo
- *             properties:
- *               correo:
- *                 type: string
- *                 description: Email del usuario a eliminar
+ *     parameters:
+ *       - in: path
+ *         name: correo
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Email of the user to delete
  *     responses:
  *       200:
  *         description: User deleted successfully

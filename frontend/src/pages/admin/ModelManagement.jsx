@@ -23,6 +23,7 @@ const ModelManagement = () => {
   const [trainingData, setTrainingData] = useState([]);
   const [testData, setTestData] = useState([]);
   const [activeTab, setActiveTab] = useState('status'); // New state for active tab
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
   
   // Auto-clear error messages after 5 seconds
   useEffect(() => {
@@ -60,7 +61,7 @@ const ModelManagement = () => {
    */  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);      
-      const response = await axios.get('http://localhost:5000/ml/logs', {
+      const response = await axios.get(`${API_BASE_URL}/ml/logs`, {
         withCredentials: true // Include credentials (cookies) with the request
       });
       setLogs(response.data);
@@ -90,7 +91,7 @@ const ModelManagement = () => {
   const fetchModelStatus = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/ml/status', { withCredentials: true });
+      const response = await axios.get(`${API_BASE_URL}/ml/status`, { withCredentials: true });
       setModelStatus(response.data);
     } catch (error) {
       if (!handleAuthError(error)) {
@@ -109,7 +110,7 @@ const ModelManagement = () => {
    */  const fetchScheduleInfo = useCallback(async () => {
     try {
       setLoading(true);      
-      const response = await axios.get('http://localhost:5000/ml/schedule', {
+      const response = await axios.get(`${API_BASE_URL}/ml/schedule`, {
         withCredentials: true // Include credentials (cookies) with the request
       });
       setNextUpdate(response.data.schedule);
@@ -138,7 +139,7 @@ const ModelManagement = () => {
    */
   const fetchMetrics = useCallback(async () => {
     try {
-      const response = await axios.get('http://localhost:5000/ml/metrics', { withCredentials: true });
+      const response = await axios.get(`${API_BASE_URL}/ml/metrics`, { withCredentials: true });
       console.log('Metrics response:', response.data);
       setTrainingData(response.data.training || []);
       setTestData(response.data.test || []);
@@ -155,7 +156,7 @@ const ModelManagement = () => {
   const runManualUpdate = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.post('http://localhost:5000/ml/update', {}, { withCredentials: true });
+      const response = await axios.post(`${API_BASE_URL}/ml/update`, {}, { withCredentials: true });
       setMessage({ type: 'success', text: response.data.message });
       await fetchLogs();
       await fetchModelStatus();
@@ -177,7 +178,7 @@ const ModelManagement = () => {
         setMessage(null);
         
         // Verify user session before proceeding
-        const sessionResponse = await axios.get('http://localhost:5000/users/getSession', {
+        const sessionResponse = await axios.get(`${API_BASE_URL}/users/getSession`, {
           withCredentials: true
           // Removidos los headers que causan problemas con CORS
         });

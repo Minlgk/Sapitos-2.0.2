@@ -5,6 +5,8 @@ import axios from "axios";
 import { notify, NotificationType } from "./NotificationService";
 import Swal from "sweetalert2";
 
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
+
 const useUserSession = () => {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,17 +14,26 @@ const useUserSession = () => {
   useEffect(() => {
     const fetchSession = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/users/getSession', {
-          withCredentials: true
+        const response = await fetch(`${API_BASE_URL}/users/getSession`, {
+          credentials: 'include'
         });
         
-        if (response.data && response.data.usuario) {
+        if (!response.ok) {
+          throw new Error(`Error al obtener sesión: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data && data.usuario) {
           setSession({
-            userId: response.data.usuario.id,
-            nombre: response.data.usuario.nombre,
-            email: response.data.usuario.correo,
-            rol: response.data.usuario.rol
+            userId: data.usuario.id,
+            nombre: data.usuario.nombre,
+            email: data.usuario.correo,
+            rol: data.usuario.rol
           });
+        } else {
+          console.warn('Respuesta de sesión sin datos de usuario:', data);
+          setSession(null);
         }
       } catch (error) {
         console.error('Error al obtener sesión:', error);
@@ -51,7 +62,7 @@ const InvoiceAddLayer = () => {
     const fetchProveedores = async () => {
       try {
         console.log('Intentando cargar proveedores...');
-        const response = await axios.get('http://localhost:5000/pedido/proveedores');
+        const response = await axios.get(`${API_BASE_URL}/pedido/proveedores`);
         
         if (response.data && Array.isArray(response.data)) {
           setProveedores(response.data);
@@ -143,27 +154,31 @@ const InvoiceAddLayer = () => {
         }
 
         setIsSubmitting(true);
-        setError(null);        
-        const response = await axios.post("http://localhost:5000/pedido", pedidoData, {
-          withCredentials: true
-        });
-        
-        if (response.data?.ordenId) {
-          setPedidoID(response.data.ordenId);
-          setPedidoEnviado(true);
-          notify("¡Pedido creado exitosamente!", NotificationType.SUCCESS);
-          setTimeout(() => navigate("/pedidos"), 2500);
-        } else {
-          throw new Error("No se recibió el ID del pedido");
+        setError(null);
+
+        try {
+          const response = await axios.post(`${API_BASE_URL}/pedido`, pedidoData);
+          
+          if (response.data?.ordenId) {
+            setPedidoID(response.data.ordenId);
+            setPedidoEnviado(true);
+            notify("¡Pedido creado exitosamente!", NotificationType.SUCCESS);
+            setTimeout(() => navigate("/pedidos"), 2500);
+          } else {
+            throw new Error("No se recibió el ID del pedido");
+          }
+        } catch (err) {
+          console.error("Error al enviar pedido:", err);
+          const errorMsg = err.response?.data?.error || err.message;
+          setError(errorMsg);
+          notify(errorMsg, NotificationType.ERROR);
+        } finally {
+          setIsSubmitting(false);
         }
       }
     } catch (err) {
-      console.error("Error al enviar pedido:", err);
-      const errorMsg = err.response?.data?.error || err.message;
-      setError(errorMsg);
-      notify(errorMsg, NotificationType.ERROR);
-    } finally {
-      setIsSubmitting(false);
+      console.error("Error al mostrar confirmación:", err);
+      setError("Error al procesar la solicitud");
     }
   };
 
@@ -309,7 +324,7 @@ const TablaProductos = ({ onEnviarPedido, isSubmitting, proveedores, pedidoEnvia
       
       try {
         const response = await axios.get(
-          `http://localhost:5000/pedido/productos/${encodeURIComponent(proveedorSeleccionado)}`
+          `${API_BASE_URL}/pedido/productos/${encodeURIComponent(proveedorSeleccionado)}`
         );
         const productosData = (response.data || []).map(prod => ({
           ...prod,

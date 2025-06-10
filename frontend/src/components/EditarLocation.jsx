@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 
 const EditarLocation = () => {
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -20,7 +21,7 @@ const EditarLocation = () => {
   useEffect(() => {
     const fetchLocation = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/location2", {
+        const response = await axios.get(`${API_BASE_URL}/location2`, {
           withCredentials: true,
         });
         const location = response.data.find(loc => loc.LOCATION_ID === parseInt(id));
@@ -56,7 +57,7 @@ const EditarLocation = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`http://localhost:5000/location2/${id}`, formData, {
+      await axios.put(`${API_BASE_URL}/location2/${id}`, formData, {
         withCredentials: true
       });
       alert("Ubicación actualizada correctamente");

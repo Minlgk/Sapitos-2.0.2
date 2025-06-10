@@ -1,0 +1,9 @@
+---
+applications:
+  - name: sapitos-frontend
+    memory: 64M
+    buildpacks:
+      - staticfile_buildpack
+    path: dist
+    routes:
+      - route: sapitos-frontend.cfapps.us10-001.hana.ondemand.com

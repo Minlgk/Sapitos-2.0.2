@@ -22,6 +22,7 @@ const DashBoardLayerOne = () => {
     articulos: { total: 0, percentage_change: 0 },
     clientes: { total: 0, percentage_change: 0 },
   });
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
 
   useEffect(() => {
     const fetchKpiData = async (locationId) => {
@@ -46,10 +47,10 @@ const DashBoardLayerOne = () => {
           articulosRes,
           clientesRes,
         ] = await Promise.all([
-          fetch(`http://localhost:5000/kpi/ventas${locationParam}`),
-          fetch(`http://localhost:5000/kpi/unidades${locationParam}`),
-          fetch(`http://localhost:5000/kpi/articulos${locationParam}`),
-          fetch(`http://localhost:5000/kpi/clientes${locationParam}`),
+          fetch(`${API_BASE_URL}/kpi/ventas${locationParam}`),
+          fetch(`${API_BASE_URL}/kpi/unidades${locationParam}`),
+          fetch(`${API_BASE_URL}/kpi/articulos${locationParam}`),
+          fetch(`${API_BASE_URL}/kpi/clientes${locationParam}`),
         ]);
 
       const ventas = await ventasRes.json();
@@ -79,7 +80,7 @@ const DashBoardLayerOne = () => {
   useEffect(() => {
     const fetchAllLocations = async () => {
       try {
-        const response = await fetch("http://localhost:5000/location2", {
+        const response = await fetch(`${API_BASE_URL}/location2`, {
           credentials: "include"
         });
         
@@ -120,7 +121,7 @@ const DashBoardLayerOne = () => {
           // Fetch location details if user has a location ID
           if (locationId) {
             console.log("Fetching location for ID:", locationId);
-            const locationResponse = await fetch(`http://localhost:5000/helpers/locations/${locationId}`, {
+            const locationResponse = await fetch(`${API_BASE_URL}/helpers/locations/${locationId}`, {
               credentials: 'include'
             });
             console.log("Location response status:", locationResponse.status);
@@ -131,7 +132,7 @@ const DashBoardLayerOne = () => {
               setUserLocation(locationData);
 
               // Fetch inventory data for the location
-              const inventoryResponse = await fetch(`http://localhost:5000/inventory/location/${locationId}`, {
+              const inventoryResponse = await fetch(`${API_BASE_URL}/inventory/location/${locationId}`, {
                 credentials: 'include'
               });
               console.log("Inventory response status:", inventoryResponse.status);

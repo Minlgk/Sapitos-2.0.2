@@ -6,7 +6,7 @@ const HomeAdmin = () => {
   return (
     <>
       <MasterLayout role="admin">
-        <div id="homeAdminPage"> {/* ID agregado aquí */}
+        <div id="homeAdminPage">
           <DashBoardLayerOne />
         </div>
       </MasterLayout>

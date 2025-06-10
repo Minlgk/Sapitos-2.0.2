@@ -9,13 +9,14 @@ const UserPerfil = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState(null);
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
+
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const apiUrl = "http://localhost:5000";
-        const response = await fetch(`${apiUrl}/users/getSession`, {
+        const response = await fetch(`${API_BASE_URL}/users/getSession`, {
           credentials: "include",
           headers: {
             'Accept': 'application/json',
@@ -38,7 +39,7 @@ const UserPerfil = () => {
           });
           setIsAdmin(data.usuario.rol === "admin");
           try {
-            const imageResponse = await fetch(`${apiUrl}/users/${data.usuario.correo}/profileImage`, {
+            const imageResponse = await fetch(`${API_BASE_URL}/users/${data.usuario.correo}/profileImage`, {
               credentials: "include",
               headers: {
                 'Accept': 'application/octet-stream, image/*',
@@ -120,9 +121,8 @@ const UserPerfil = () => {
 
   const handleSave = async () => {
     try {
-      const apiUrl = "http://localhost:5000";
       // 1. Update user info
-      const response = await fetch(`${apiUrl}/users/updateUser`, {
+      const response = await fetch(`${API_BASE_URL}/users/updateUser`, {
         method: 'PUT',
         credentials: "include",
         headers: {
@@ -137,7 +137,7 @@ const UserPerfil = () => {
         const arrayBuffer = await selectedImageFile.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
         const imageData = Array.from(uint8Array);
-        const imgRes = await fetch(`${apiUrl}/users/updateProfileImage`, {
+        const imgRes = await fetch(`${API_BASE_URL}/users/updateProfileImage`, {
           method: 'POST',
           credentials: "include",
           headers: {
@@ -158,7 +158,7 @@ const UserPerfil = () => {
         setSelectedImageFile(null);
         // Refresh profile image from backend
         try {
-          const imageResponse = await fetch(`${apiUrl}/users/${form.correo}/profileImage`, {
+          const imageResponse = await fetch(`${API_BASE_URL}/users/${form.correo}/profileImage`, {
             credentials: "include",
             headers: {
               'Accept': 'application/octet-stream, image/*',

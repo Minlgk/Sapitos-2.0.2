@@ -1,0 +1,8 @@
+applications:
+  - name: Sapitos-backend
+    memory: 512M
+    buildpacks:
+      - nodejs_buildpack
+    path: .
+    command: node server.js
+health-check-type: process

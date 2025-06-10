@@ -11,6 +11,7 @@ const AddLocationLayer = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
 
   const handleInputChange = (e) => {
     setNuevaLocation({ ...nuevaLocation, [e.target.name]: e.target.value });
@@ -28,7 +29,7 @@ const AddLocationLayer = () => {
         FechaCreado: new Date().toISOString().split("T")[0], // formato 'YYYY-MM-DD'
       };
 
-      await axios.post("http://localhost:5000/location2/", datosParaEnviar, {
+      await axios.post(`${API_BASE_URL}/location2/`, datosParaEnviar, {
         withCredentials: true,
       });
 

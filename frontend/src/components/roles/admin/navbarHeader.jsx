@@ -7,6 +7,7 @@ const NavbarHeader = ({ sidebarActive, sidebarControl, mobileMenuControl }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
 
   const fetchUserData = async () => {
     try {
@@ -22,7 +23,7 @@ const NavbarHeader = ({ sidebarActive, sidebarControl, mobileMenuControl }) => {
         // Fetch location details if user has a location ID
         if (parsedData.LOCATION_ID) {
           console.log("Fetching location for ID:", parsedData.LOCATION_ID);
-          const locationResponse = await fetch(`http://localhost:5000/helpers/locations/${parsedData.LOCATION_ID}`, {
+          const locationResponse = await fetch(`${API_BASE_URL}/helpers/locations/${parsedData.LOCATION_ID}`, {
             credentials: 'include'
           });
           console.log("Location response status:", locationResponse.status);
@@ -83,7 +84,8 @@ const NavbarHeader = ({ sidebarActive, sidebarControl, mobileMenuControl }) => {
 
   let profileImage = "assets/images/user.png";
   if (userData?.CORREO) {
-    profileImage = `http://localhost:5000/users/${encodeURIComponent(userData.CORREO)}/profileImage`;
+    // Usamos el endpoint backend para obtener la imagen de perfil
+    profileImage = `${API_BASE_URL}/users/${encodeURIComponent(userData.CORREO)}/profileImage`;
   }
 
   return (

@@ -157,6 +157,7 @@ const NotificationsLayer = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [usingMockData, setUsingMockData] = useState(false);
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
 
   useEffect(() => {
     fetchNotifications();
@@ -296,14 +297,11 @@ const NotificationsLayer = () => {
             )}
           </h6>
           <button 
-            className="refresh-button"
+            className="btn btn-sm btn-outline-primary"
             onClick={fetchNotifications}
             disabled={loading}
           >
-            <Icon 
-              icon="mdi:refresh" 
-              className={`text-xl ${loading ? "animate-spin" : ""}`}
-            />
+            <Icon icon="mdi:refresh" className={loading ? "animate-spin" : ""} />
           </button>
         </div>
         <div className='card-body p-24 d-flex flex-column gap-3'>

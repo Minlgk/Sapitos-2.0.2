@@ -1,0 +1,244 @@
+name: Deploy to Cloud Foundry
+
+on:
+  push:
+    branches:
+      - CloudFoundry
+
+jobs:
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    environment: .env
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Cloud Foundry CLI
+        run: |
+          sudo apt-get update && sudo apt-get install -y wget
+          wget -O cf-cli.deb https://github.com/cloudfoundry/cli/releases/download/v8.14.0/cf8-cli-installer_8.14.0_x86-64.deb
+          sudo dpkg -i cf-cli.deb
+
+      - name: Login to Cloud Foundry
+        env:
+          CF_USERNAME: ${{ secrets.CF_USERNAME }}
+          CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
+          ACCESS_TOKENCLOUD: ${{ secrets.ACCESS_TOKENCLOUD }}
+        run: |
+          echo "Setting API endpoint to https://api.cf.us10-001.hana.ondemand.com"
+          cf api "https://api.cf.us10-001.hana.ondemand.com"
+          
+          echo "Attempting Cloud Foundry login..."
+          echo "Debug: CF_USERNAME is empty: $(test -z "$CF_USERNAME" && echo true || echo false)"
+          echo "Debug: ACCESS_TOKENCLOUD is empty: $(test -z "$ACCESS_TOKENCLOUD" && echo true || echo false)"
+
+          if [ -n "$CF_USERNAME" ] && [ -n "$CF_PASSWORD" ]; then
+            echo "Attempting login with username/password..."
+            if cf login -u "$CF_USERNAME" -p "$CF_PASSWORD"; then
+              echo "Login successful with username/password."
+            else
+              echo "Username/password login failed."
+              if [ -n "$ACCESS_TOKENCLOUD" ]; then
+                echo "Attempting login with SSO passcode as fallback..."
+                if cf login --sso-passcode "$ACCESS_TOKENCLOUD"; then
+                  echo "Login successful with SSO passcode."
+                else
+                  echo "SSO passcode login failed after username/password attempt."
+                  echo "Ensure ACCESS_TOKENCLOUD secret is valid."
+                  exit 1
+                fi
+              else
+                echo "No ACCESS_TOKENCLOUD for fallback. Login failed."
+                echo "Ensure CF_USERNAME, CF_PASSWORD, or ACCESS_TOKENCLOUD secrets are correctly set."
+                exit 1
+              fi
+            fi
+          elif [ -n "$ACCESS_TOKENCLOUD" ]; then
+            echo "No username/password provided or they were empty. Attempting login with SSO passcode..."
+            if cf login --sso-passcode "$ACCESS_TOKENCLOUD"; then
+              echo "Login successful with SSO passcode."
+            else
+              echo "SSO passcode login failed."
+              echo "Ensure ACCESS_TOKENCLOUD secret is set correctly in GitHub and is a valid token."
+              if [ -z "$ACCESS_TOKENCLOUD" ]; then
+                  echo "Specifically, the ACCESS_TOKENCLOUD environment variable resolved to an empty string."
+              fi
+              exit 1
+            fi
+          else
+            echo "Critical: Neither username/password nor SSO passcode are available."
+            echo "Please ensure CF_USERNAME/CF_PASSWORD secrets or the ACCESS_TOKENCLOUD secret are correctly set in GitHub."
+            exit 1
+          fi
+
+      - name: Deploy Frontend
+        run: |
+          cd frontend
+          rm -rf dist
+          npm install 
+          npm run build
+          # Copy Staticfile to dist directory
+          cp Staticfile dist/
+          # Change to dist directory and create a simple manifest
+          cd dist
+          echo "applications:" > manifest.yml
+          echo "  - name: sapitos-frontend" >> manifest.yml
+          echo "    memory: 64M" >> manifest.yml
+          echo "    buildpacks:" >> manifest.yml
+          echo "      - staticfile_buildpack" >> manifest.yml
+          echo "    routes:" >> manifest.yml
+          echo "      - route: sapitos-frontend.cfapps.us10-001.hana.ondemand.com" >> manifest.yml
+          # Push directly from dist directory
+          cf push -f manifest.yml
+
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    environment: .env
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Cloud Foundry CLI
+        run: |
+          sudo apt-get update && sudo apt-get install -y wget
+          wget -O cf-cli.deb https://github.com/cloudfoundry/cli/releases/download/v8.14.0/cf8-cli-installer_8.14.0_x86-64.deb
+          sudo dpkg -i cf-cli.deb
+
+      - name: Login to Cloud Foundry
+        env:
+          CF_USERNAME: ${{ secrets.CF_USERNAME }}
+          CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
+          ACCESS_TOKENCLOUD: ${{ secrets.ACCESS_TOKENCLOUD }}
+        run: |
+          echo "Setting API endpoint to https://api.cf.us10-001.hana.ondemand.com"
+          cf api "https://api.cf.us10-001.hana.ondemand.com"
+          
+          echo "Attempting Cloud Foundry login..."
+          echo "Debug: CF_USERNAME is empty: $(test -z "$CF_USERNAME" && echo true || echo false)"
+          echo "Debug: ACCESS_TOKENCLOUD is empty: $(test -z "$ACCESS_TOKENCLOUD" && echo true || echo false)"
+
+          if [ -n "$CF_USERNAME" ] && [ -n "$CF_PASSWORD" ]; then
+            echo "Attempting login with username/password..."
+            if cf login -u "$CF_USERNAME" -p "$CF_PASSWORD"; then
+              echo "Login successful with username/password."
+            else
+              echo "Username/password login failed."
+              if [ -n "$ACCESS_TOKENCLOUD" ]; then
+                echo "Attempting login with SSO passcode as fallback..."
+                if cf login --sso-passcode "$ACCESS_TOKENCLOUD"; then
+                  echo "Login successful with SSO passcode."
+                else
+                  echo "SSO passcode login failed after username/password attempt."
+                  echo "Ensure ACCESS_TOKENCLOUD secret is valid."
+                  exit 1
+                fi
+              else
+                echo "No ACCESS_TOKENCLOUD for fallback. Login failed."
+                echo "Ensure CF_USERNAME, CF_PASSWORD, or ACCESS_TOKENCLOUD secrets are correctly set."
+                exit 1
+              fi
+            fi
+          elif [ -n "$ACCESS_TOKENCLOUD" ]; then
+            echo "No username/password provided or they were empty. Attempting login with SSO passcode..."
+            if cf login --sso-passcode "$ACCESS_TOKENCLOUD"; then
+              echo "Login successful with SSO passcode."
+            else
+              echo "SSO passcode login failed."
+              echo "Ensure ACCESS_TOKENCLOUD secret is set correctly in GitHub and is a valid token."
+              if [ -z "$ACCESS_TOKENCLOUD" ]; then
+                  echo "Specifically, the ACCESS_TOKENCLOUD environment variable resolved to an empty string."
+              fi
+              exit 1
+            fi
+          else
+            echo "Critical: Neither username/password nor SSO passcode are available."
+            echo "Please ensure CF_USERNAME/CF_PASSWORD secrets or the ACCESS_TOKENCLOUD secret are correctly set in GitHub."
+            exit 1
+          fi
+
+      - name: Prepare environment variables
+        env:
+          SERVER_NODE: ${{ secrets.SERVER_NODE }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          BACK_PORT: ${{ secrets.BACK_PORT }}
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+        run: |
+          echo "Environment variables set dynamically from GitHub secrets."
+
+      - name: Debug Environment Variables
+        env:
+          SERVER_NODE: ${{ secrets.SERVER_NODE }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          echo "Debugging environment variables..."
+          echo "SERVER_NODE: $SERVER_NODE"
+          echo "DB_USERNAME: $DB_USERNAME"
+          echo "DB_PASSWORD is set: $(test -n \"$DB_PASSWORD\" && echo true || echo false)"
+
+      - name: Set environment variables for Cloud Foundry app
+        env:
+          SERVER_NODE: ${{ secrets.SERVER_NODE }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          BACK_PORT: ${{ secrets.BACK_PORT }}
+          AUTH_OTP_SECRET: ${{ secrets.AUTH_OTP_SECRET }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+          EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+        run: |
+          cf set-env Sapitos-backend SERVER_NODE "$SERVER_NODE"
+          cf set-env Sapitos-backend DB_USERNAME "$DB_USERNAME"
+          cf set-env Sapitos-backend DB_PASSWORD "$DB_PASSWORD"
+          cf set-env Sapitos-backend JWT_SECRET "$JWT_SECRET"
+          cf set-env Sapitos-backend BACK_PORT "$BACK_PORT"
+          cf set-env Sapitos-backend AUTH_OTP "true"
+          cf set-env Sapitos-backend AUTH_OTP_SECRET "$AUTH_OTP_SECRET"
+          cf set-env Sapitos-backend EMAIL_USER "$EMAIL_USER"
+          cf set-env Sapitos-backend EMAIL_PASSWORD "$EMAIL_PASSWORD"
+          cf set-env Sapitos-backend EMAIL_HOST "$EMAIL_HOST"
+          cf set-env Sapitos-backend EMAIL_PORT "$EMAIL_PORT"
+          cf set-env Sapitos-backend EMAIL_FROM "$EMAIL_FROM"
+          cf restage Sapitos-backend || true # Ensure env changes are applied
+
+      - name: Deploy Backend
+        run: |
+          cd backend
+          # Update manifest to include necessary environment variables
+          cat > manifest.yml << EOL
+          applications:
+            - name: Sapitos-backend
+              memory: 512M
+              buildpacks:
+                - nodejs_buildpack
+              path: .
+              command: node server.js
+              env:
+                NODE_ENV: production
+                DISABLE_MLOPS: true
+                SERVER_NODE: ${{ secrets.SERVER_NODE }}
+                DB_USERNAME: ${{ secrets.DB_USERNAME }}
+                DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+                JWT_SECRET: ${{ secrets.JWT_SECRET }}
+                BACK_PORT: ${{ secrets.BACK_PORT }}
+                AUTH_OTP: true
+                AUTH_OTP_SECRET: ${{ secrets.AUTH_OTP_SECRET }}
+                EMAIL_USER: ${{ secrets.EMAIL_USER }}
+                EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+                EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+                EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
+                EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EOL
+          # Push with manifest which includes environment variables
+          cf push --no-start
+          cf start Sapitos-backend

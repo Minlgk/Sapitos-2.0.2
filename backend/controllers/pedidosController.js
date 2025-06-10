@@ -9,7 +9,6 @@ const getPedido = async (req, res) => {
         o.Creado_por_ID as CREADA_POR,
         u.Correo as CORREO_CREADOR,
         u.Nombre as CREADO_POR_NOMBRE,
-        u.Location_ID as USER_LOCATION_ID,
         o.Organizacion,
         o.FechaCreacion as FECHACREACION,
         o.FechaAceptacion as FECHAACEPTACION,
@@ -34,11 +33,12 @@ const getPedido = async (req, res) => {
       if (err) {
         console.error("Error al obtener los pedidos:", err);
         return res.status(500).json({ error: "Error al obtener los pedidos", detalle: err.message });
-      }      const formatted = (Array.isArray(result) ? result : []).map(pedido => ({
+      }
+
+      const formatted = (Array.isArray(result) ? result : []).map(pedido => ({
         id: pedido.ID,
         creadaPor: pedido.CORREO_CREADOR,
         creadoPorNombre: pedido.CREADO_POR_NOMBRE,
-        locationId: pedido.USER_LOCATION_ID,
         organizacion: pedido.Organizacion,
         tipoOrden: pedido.TipoOrden,
         fechaCreacion: pedido.FECHACREACION,

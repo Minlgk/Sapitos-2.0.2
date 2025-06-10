@@ -377,7 +377,7 @@ const getUsers = async (req, res) => {
 };
 
 const deleteUser = async (req, res) => {
-  const { correo } = req.body;
+  const { correo } = req.params;
   
   if (!correo) {
     return res.status(400).json({ error: "Necesitas un email" });
@@ -644,7 +644,8 @@ const getLocations = async (req, res) => {
         return res.status(500).json({ error: "Error al obtener ubicaciones" });
       }
 
-      if (!result || result.length === 0) {
+      if (!result || result.length === 0) 
+        {
         console.warn("No locations found in the database");
         return res.status(404).json({ error: "No se encontraron ubicaciones" });
       }

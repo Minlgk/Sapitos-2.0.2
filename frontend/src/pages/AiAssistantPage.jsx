@@ -31,7 +31,9 @@ const SUGGESTED_QUESTIONS = {
 
 const AiAssistantPage = () => {
   const location = useLocation();
-  const [userData, setUserData] = useState(null);
+  const role = location.state?.role || localStorage.getItem('userRole') || 'admin';
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
+
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState([
@@ -87,7 +89,7 @@ const AiAssistantPage = () => {
     setShowSuggestions(false);
 
     try {
-      const response = await fetch('http://localhost:5000/api/ai/ask', {
+      const response = await fetch(`${API_BASE_URL}/api/ai/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question }),

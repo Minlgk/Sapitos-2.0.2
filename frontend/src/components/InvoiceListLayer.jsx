@@ -5,11 +5,11 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { Button, Form, Badge } from 'react-bootstrap';
 import { notify, NotificationType } from "./NotificationService";
-import getCookie from '../utils/cookies';
 
 const InvoiceListLayer = () => {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
   const [searchTerm, setSearchTerm] = useState("");  const [filters, setFilters] = useState({
     proveedor: '',
     estatus: '',
@@ -28,29 +28,13 @@ const InvoiceListLayer = () => {
   useEffect(() => {
     fetchPedidos();
   }, []);
-  const fetchPedidos = async () => {
+
+    const fetchPedidos = async () => {
     try {
       setLoading(true);
-      
-      // Get user data from cookie to determine role and location
-      const cookieData = getCookie("UserData");
-      let endpoint = "http://localhost:5000/pedido"; // default endpoint for admin
-      
-      if (cookieData) {
-        const userData = typeof cookieData === 'string' ? JSON.parse(cookieData) : cookieData;
-        const userRole = userData?.ROL;
-        const locationId = userData?.LOCATION_ID || userData?.locationId;
-        
-        // If user is "dueno" and has a location, fetch location-specific orders
-        if (userRole === 'dueno' && locationId) {
-          // For dueño role, we'll filter pedidos by location on frontend since there's no specific backend endpoint yet
-          endpoint = "http://localhost:5000/pedido";
-        }
-      }
-      
-      const response = await axios.get(endpoint);
+      const response = await axios.get(`${API_BASE_URL}/pedido`);
       const data = Array.isArray(response.data) ? response.data : (response.data.formatted || response.data.pedidos || []);
-        let formattedPedidos = data.map((pedido, index) => ({
+      const formattedPedidos = data.map((pedido, index) => ({
         numero: String(index + 1).padStart(2, '0'),
         id: `#${pedido.id}`,
         proveedor: pedido.organizacion || pedido.creadaPor || '',
@@ -58,32 +42,8 @@ const InvoiceListLayer = () => {
         email: pedido.creadaPor || '',
         fecha: formatDate(pedido.fechaCreacion),
         cantidad: pedido.total,
-        estatus: pedido.estatus,
-        locationId: pedido.locationId
+        estatus: pedido.estatus
       }));
-        // Filter by user's location if user is dueño
-      if (cookieData) {
-        const userData = typeof cookieData === 'string' ? JSON.parse(cookieData) : cookieData;
-        const userRole = userData?.ROL;
-        const userLocationId = userData?.LOCATION_ID || userData?.locationId;
-        
-        console.log('User role:', userRole);
-        console.log('User location ID:', userLocationId);
-        console.log('Total pedidos antes del filtro:', formattedPedidos.length);
-        console.log('Pedidos locationIds:', formattedPedidos.map(p => p.locationId));
-        
-        if (userRole === 'dueno' && userLocationId) {
-          const beforeFilterCount = formattedPedidos.length;
-          formattedPedidos = formattedPedidos.filter(pedido => {
-            const matches = pedido.locationId === userLocationId || 
-                           pedido.locationId === parseInt(userLocationId);
-            console.log(`Pedido ${pedido.id}: locationId=${pedido.locationId}, userLocationId=${userLocationId}, matches=${matches}`);
-            return matches;
-          });
-          console.log(`Filtrado para dueño: ${beforeFilterCount} -> ${formattedPedidos.length} pedidos`);
-        }
-      }
-      
       formattedPedidos.sort((a, b) => {
         const idA = parseInt(a.id.replace('#', ''));
         const idB = parseInt(b.id.replace('#', ''));
@@ -184,6 +144,7 @@ const InvoiceListLayer = () => {
   const handleDelete = async (id) => {
     const pedidoId = id.replace("#", "");
   
+  
     try {
       const result = await Swal.fire({
         title: "¿Eliminar pedido?",
@@ -207,7 +168,7 @@ const InvoiceListLayer = () => {
       });
   
       if (result.isConfirmed) {
-        await axios.delete(`http://localhost:5000/pedido/${pedidoId}`);
+        await axios.delete(`${API_BASE_URL}/pedido/${pedidoId}`);
         notify("Pedido eliminado exitosamente", NotificationType.SUCCESS);
         fetchPedidos();
       }
@@ -224,7 +185,7 @@ const InvoiceListLayer = () => {
       try {
 
         if (typeof Swal !== 'undefined') {
-          const response = await axios.put(`http://localhost:5000/pedido/${pedido.id.replace("#", "")}/inventario`);
+          const response = await axios.put(`${API_BASE_URL}/pedido/${pedido.id.replace("#", "")}/inventario`);
             
           Swal.fire({
             icon: "success",
@@ -233,7 +194,7 @@ const InvoiceListLayer = () => {
           });
           fetchPedidos(); 
         } else {
-          const response = await axios.put(`http://localhost:5000/pedido/${pedido.id.replace("#", "")}/inventario`);
+          const response = await axios.put(`${API_BASE_URL}/pedido/${pedido.id.replace("#", "")}/inventario`);
           alert(response.data.message || `Pedido ${pedido.id} enviado al inventario principal correctamente`);
           fetchPedidos();
         }
@@ -272,7 +233,7 @@ const InvoiceListLayer = () => {
     try {
       const pedidoId = pedido.id.replace('#', '');
       
-      await axios.patch(`http://localhost:5000/pedido/${pedidoId}/estatus`, {
+      await axios.patch(`${API_BASE_URL}/pedido/${pedidoId}/estatus`, {
         estatus: "Completado"
       });
       

@@ -10,13 +10,14 @@ const LocationListLayer = () => {
   const [paginaActual, setPaginaActual] = useState(1);
   const porPagina = 10;
   const [loading, setLoading] = useState(false);
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
 
   const navigate = useNavigate();
 
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:5000/location2", {
+      const response = await axios.get(`${API_BASE_URL}/location2`, {
         withCredentials: true,
       });
       setLocations(response.data);
@@ -47,7 +48,7 @@ const LocationListLayer = () => {
     if (!confirmar) return;
 
     try {
-      await axios.delete(`http://localhost:5000/location2/${id}`, {
+      await axios.delete(`${API_BASE_URL}/location2/${id}`, {
         withCredentials: true
       });
       fetchAllData();

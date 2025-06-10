@@ -10,13 +10,14 @@ const ArticulosListLayer = () => {
   const [paginaActual, setPaginaActual] = useState(1);
   const articulosPorPagina = 10;
   const [loading, setLoading] = useState(false);
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
 
   const navigate = useNavigate();
 
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:5000/articulo", {
+      const response = await axios.get(`${API_BASE_URL}/articulo`, {
         withCredentials: true,
       });
       setArticulos(response.data);
@@ -35,7 +36,9 @@ const ArticulosListLayer = () => {
 
   const eliminarArticulo = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/articulo/${id}`);
+      await axios.delete(`${API_BASE_URL}/articulo/${id}`, {
+        withCredentials: true
+      });
       fetchAllData();
     } catch (error) {
       console.error("Error al eliminar artículo:", error);

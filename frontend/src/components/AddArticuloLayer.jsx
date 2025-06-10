@@ -13,6 +13,7 @@ const AddArticuloLayer = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
 
   const handleInputChange = (e) => {
     setNuevoArticulo({ ...nuevoArticulo, [e.target.name]: e.target.value });
@@ -22,7 +23,7 @@ const AddArticuloLayer = () => {
     setLoading(true);
     setError(null);
     try {
-      await axios.post("http://localhost:5000/articulo", nuevoArticulo, {
+      await axios.post(`${API_BASE_URL}/articulo`, nuevoArticulo, {
         withCredentials: true,
       });
       navigate("/articulos");

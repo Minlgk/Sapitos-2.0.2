@@ -5,6 +5,7 @@ import { useState } from "react";
 const UserMenu = ({ name = "Usuario", role = "Invitado", profileImage = "assets/images/user.png", onClose }) => {
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
 
   const handleLogout = async () => {
     if (isLoggingOut) return; 
@@ -12,7 +13,7 @@ const UserMenu = ({ name = "Usuario", role = "Invitado", profileImage = "assets/
     setIsLoggingOut(true);
     
     try {
-      const response = await fetch("http://localhost:5000/users/logoutUser", {
+      const response = await fetch(`${API_BASE_URL}/users/logoutUser`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -30,7 +31,7 @@ const UserMenu = ({ name = "Usuario", role = "Invitado", profileImage = "assets/
       if (onClose) {
         onClose();
       }
-      window.location.href = "/";
+      navigate("/");
       
     } catch (error) {
       console.error("Error durante logout:", error);
@@ -44,7 +45,7 @@ const UserMenu = ({ name = "Usuario", role = "Invitado", profileImage = "assets/
       alert("Hubo un problema cerrando sesión, pero serás redirigido.");
       
       // Redirigir de todos modos para limpiar estado
-      window.location.href = "/signin";
+      navigate("/");
       
     } finally {
       setIsLoggingOut(false);

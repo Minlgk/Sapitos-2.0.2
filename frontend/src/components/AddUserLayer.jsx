@@ -8,6 +8,7 @@ const AddUserLayer = () => {
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
   const [locations, setLocations] = useState([]);
   const [tipoSeleccionado, setTipoSeleccionado] = useState("");
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
   const [nuevoUsuario, setNuevoUsuario] = useState({
     nombre: "",
     correo: "",
@@ -33,7 +34,7 @@ const AddUserLayer = () => {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/location2", {
+        const response = await axios.get(`${API_BASE_URL}/location2`, {
           withCredentials: true
         });
         setLocations(response.data);
@@ -62,7 +63,7 @@ const AddUserLayer = () => {
     setLoading(true);
     setError(null);
     try {
-      await axios.post("http://localhost:5000/users/register", nuevoUsuario);
+      await axios.post(`${API_BASE_URL}/users/register`, nuevoUsuario);
       notify("¡Usuario creado exitosamente!", NotificationType.SUCCESS);
       navigate("/usuarios");
     } catch (error) {

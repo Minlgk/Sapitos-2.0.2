@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const EditArticuloLayer = () => {
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -17,7 +18,7 @@ const EditArticuloLayer = () => {
   useEffect(() => {
     const fetchArticulo = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/articulo", {
+        const res = await axios.get(`${API_BASE_URL}/articulo`, {
           withCredentials: true,
         });
         const art = res.data.find((a) => a.ARTICULO_ID === parseInt(id));
@@ -49,7 +50,7 @@ const EditArticuloLayer = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`http://localhost:5000/articulo/${id}`, articulo, {
+      await axios.put(`${API_BASE_URL}/articulo/${id}`, articulo, {
         withCredentials: true,
       });
       alert("Artículo actualizado correctamente.");

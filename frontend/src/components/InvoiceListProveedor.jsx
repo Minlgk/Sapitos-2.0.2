@@ -3,12 +3,12 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { jwtDecode } from "jwt-decode"; 
-import { Link } from "react-router-dom";
 
 const InvoiceListProveedor = () => {
   const [pedidos, setPedidos] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
   const [viewMode, setViewMode] = useState("all"); 
   const [selectedPedido, setSelectedPedido] = useState(null);
 
@@ -19,8 +19,9 @@ const InvoiceListProveedor = () => {
   const fetchPedidos = async () => {
     try {
       setLoading(true);
+      console.log("Loading...");
       
-      const sessionResponse = await fetch("http://localhost:5000/users/getSession", {
+      const sessionResponse = await fetch(`${API_BASE_URL}/users/getSession`, {
         credentials: "include", 
       });
 
@@ -29,7 +30,7 @@ const InvoiceListProveedor = () => {
       }
 
       const sessionData = await sessionResponse.json();
-      console.log("Datos de sesión completos:", sessionData);
+      console.log("Datos de sesión:", sessionData);
       
       let locationId;
       let roleId;
@@ -54,7 +55,7 @@ const InvoiceListProveedor = () => {
 
       console.log("Usando locationId:", locationId);
 
-      const endpoint = `http://localhost:5000/proveedor/pedidos-aceptados/${locationId}`;
+      const endpoint = `${API_BASE_URL}/proveedor/pedidos-aceptados/${locationId}`;
 
       console.log("Fetch endpoint:", endpoint);
 
@@ -62,7 +63,6 @@ const InvoiceListProveedor = () => {
         method: 'GET',
         credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -166,20 +166,17 @@ const InvoiceListProveedor = () => {
   };
 
   const getEstadoClass = (estado) => {
-    const estadoLower = estado?.toLowerCase() || '';
-    switch (estadoLower) {
+    switch (estado?.toLowerCase()) {
       case 'completado':
-        return 'px-12 py-1 rounded-pill fw-medium text-xs bg-success-focus text-success-main';
+        return 'text-success';
       case 'pendiente':
-        return 'px-12 py-1 rounded-pill fw-medium text-xs bg-warning-focus text-warning-main';
+        return 'text-warning';
       case 'en reparto':
-        return 'px-12 py-1 rounded-pill fw-medium text-xs bg-primary-focus text-primary-main';
-      case 'rechazado':
-        return 'px-12 py-1 rounded-pill fw-medium text-xs bg-danger-focus text-danger-main';
-      case 'aprobado':
-        return 'px-12 py-1 rounded-pill fw-medium text-xs bg-info-focus text-info-main';
+        return 'text-primary';
+      case 'cancelado':
+        return 'text-danger';
       default:
-        return 'px-12 py-1 rounded-pill fw-medium text-xs bg-secondary-focus text-secondary-main';
+        return '';
     }
   };
 
@@ -218,14 +215,17 @@ const InvoiceListProveedor = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            <span className="icon">
+              <Icon icon="ion:search-outline" />
+            </span>
           </div>
           <button 
-            className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1"
+            className="btn btn-outline-primary btn-sm"
             onClick={fetchPedidos}
             disabled={loading}
             title="Actualizar lista"
           >
-            <span>Actualizar</span>
+            <Icon icon={loading ? "mdi:loading" : "mdi:refresh"} className={loading ? "spin" : ""} />
           </button>
         </div>
       </div>
@@ -252,7 +252,7 @@ const InvoiceListProveedor = () => {
                   <th>Precio Total</th>
                   <th>Método Pago</th>
                   <th>Estado</th>
-                  <th>Acciones</th>
+                  <th>Descripción</th>
                 </tr>
               </thead>
               <tbody>
@@ -261,38 +261,23 @@ const InvoiceListProveedor = () => {
                     <tr key={`pedido-${pedido.id}`}>
                       <td>{pedido.numero}</td>
                       <td>#{pedido.id}</td>
-                      <td>
-                        <div className="d-flex flex-column">
-                          <span className="fw-medium">{pedido.solicitadoPor}</span>
-                          {pedido.correoSolicitante && (
-                            <small className="text-muted">{pedido.correoSolicitante}</small>
-                          )}
-                        </div>
-                      </td>
+                      <td>{pedido.solicitadoPor}</td>
                       <td>{pedido.fechaCreacion}</td>
                       <td>{pedido.fechaEntrega}</td>
                       <td>{pedido.cantidadProductos}</td>
-                      <td className="fw-medium">${pedido.cantidad}</td>
+                      <td>${pedido.cantidad}</td>
                       <td>{pedido.metodoPago}</td>
-                      <td>
-                        <span className={`px-12 py-1 rounded-pill fw-medium text-xs ${
-                          pedido.estado === 'Completado' ? 'bg-success-focus text-success-main' : 
-                          pedido.estado === 'En Reparto' ? 'bg-primary-focus text-primary-main' :
-                          pedido.estado === 'Aprobado' ? 'bg-info-focus text-info-main' :
-                          pedido.estado === 'Rechazado' ? 'bg-danger-focus text-danger-main' :
-                          'bg-warning-focus text-warning-main'
-                        }`}>
-                          {pedido.estado}
-                        </span>
+                      <td className={getEstadoClass(pedido.estado)}>
+                        {pedido.estado}
                       </td>
                       <td className="align-middle">
-                        <button 
+                        <button
                           onClick={() => showDetails(pedido)}
-                          className='w-24-px h-24-px me-4 bg-primary-light text-primary-600 rounded-circle d-inline-flex align-items-center justify-content-center'
+                          className="w-24-px h-24-px bg-primary-light text-primary-main rounded-circle d-inline-flex align-items-center justify-content-center"
                           style={{ border: 'none' }}
                           title="Ver detalles"
                         >
-                          <Icon icon='iconamoon:eye-light' />
+                          <Icon icon="mdi:eye" />
                         </button>
                       </td>
                     </tr>
@@ -300,20 +285,18 @@ const InvoiceListProveedor = () => {
                 ) : (
                   <tr>
                     <td colSpan="10" className="text-center py-4">
-                      <div className="d-flex flex-column align-items-center gap-2">
-                        {searchTerm ? 
-                          `No se encontraron pedidos que coincidan con "${searchTerm}"` : 
-                          "No hay pedidos aceptados/enviados registrados"
-                        }
-                      </div>
+                      {searchTerm ? 
+                        `No se encontraron pedidos que coincidan con "${searchTerm}"` : 
+                        "No hay pedidos aceptados/enviados registrados"
+                      }
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+         )}
+       </div>
     </div>
   );
 };
