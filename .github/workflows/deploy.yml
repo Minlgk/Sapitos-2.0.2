@@ -21,6 +21,14 @@ jobs:
           wget -O cf-cli.deb https://github.com/cloudfoundry/cli/releases/download/v8.14.0/cf8-cli-installer_8.14.0_x86-64.deb
           sudo dpkg -i cf-cli.deb
 
+      - name: Diagnostic checks
+        run: |
+          echo "Checking CF CLI version..."
+          cf version
+          echo "Testing API connectivity..."
+          cf api "https://api.cf.us10-001.hana.ondemand.com" --skip-ssl-validation
+          echo "API connectivity test completed."
+
       - name: Login to Cloud Foundry
         env:
           CF_USERNAME: ${{ secrets.CF_USERNAME }}
@@ -30,16 +38,35 @@ jobs:
           echo "Setting API endpoint to https://api.cf.us10-001.hana.ondemand.com"
           cf api "https://api.cf.us10-001.hana.ondemand.com"
           
+          echo "--- DEBUGGING CREDENTIALS ---"
+          echo "CF_USERNAME length: ${#CF_USERNAME}"
+          echo "CF_PASSWORD length: ${#CF_PASSWORD}"
+          echo "First character of username: ${CF_USERNAME:0:1}"
+          echo "Last character of username: ${CF_USERNAME: -1}"
+          echo "CF_USERNAME exact value: '$CF_USERNAME'"
+          echo "Is CF_PASSWORD empty: $(test -z "$CF_PASSWORD" && echo true || echo false)"
+          echo "-------------------------"
+          
           echo "Attempting Cloud Foundry login..."
           echo "Debug: CF_USERNAME is empty: $(test -z "$CF_USERNAME" && echo true || echo false)"
           echo "Debug: ACCESS_TOKENCLOUD is empty: $(test -z "$ACCESS_TOKENCLOUD" && echo true || echo false)"
 
           if [ -n "$CF_USERNAME" ] && [ -n "$CF_PASSWORD" ]; then
             echo "Attempting login with username/password..."
-            if cf login -u "$CF_USERNAME" -p "$CF_PASSWORD"; then
+            echo "Using command: cf login -u \"$CF_USERNAME\" -p \"REDACTED\""
+            # Try login with detailed error output
+            if CF_TRACE=true cf login -u "$CF_USERNAME" -p "$CF_PASSWORD" 2>&1; then
               echo "Login successful with username/password."
             else
               echo "Username/password login failed."
+              echo "Exit code: $?"
+              echo "Trying again with verbose output..."
+              CF_TRACE=true cf login -u "$CF_USERNAME" -p "$CF_PASSWORD" || echo "CF login failed with exit code: $?"
+              
+              echo "Trying alternative authentication approach..."
+              # Try passing credentials in a different way
+              echo "$CF_PASSWORD" | cf auth "$CF_USERNAME" || echo "Alternative auth method failed with exit code: $?"
+              
               if [ -n "$ACCESS_TOKENCLOUD" ]; then
                 echo "Attempting login with SSO passcode as fallback..."
                 if cf login --sso-passcode "$ACCESS_TOKENCLOUD"; then
@@ -108,6 +135,14 @@ jobs:
           wget -O cf-cli.deb https://github.com/cloudfoundry/cli/releases/download/v8.14.0/cf8-cli-installer_8.14.0_x86-64.deb
           sudo dpkg -i cf-cli.deb
 
+      - name: Diagnostic checks
+        run: |
+          echo "Checking CF CLI version..."
+          cf version
+          echo "Testing API connectivity..."
+          cf api "https://api.cf.us10-001.hana.ondemand.com" --skip-ssl-validation
+          echo "API connectivity test completed."
+
       - name: Login to Cloud Foundry
         env:
           CF_USERNAME: ${{ secrets.CF_USERNAME }}
@@ -117,16 +152,35 @@ jobs:
           echo "Setting API endpoint to https://api.cf.us10-001.hana.ondemand.com"
           cf api "https://api.cf.us10-001.hana.ondemand.com"
           
+          echo "--- DEBUGGING CREDENTIALS ---"
+          echo "CF_USERNAME length: ${#CF_USERNAME}"
+          echo "CF_PASSWORD length: ${#CF_PASSWORD}"
+          echo "First character of username: ${CF_USERNAME:0:1}"
+          echo "Last character of username: ${CF_USERNAME: -1}"
+          echo "CF_USERNAME exact value: '$CF_USERNAME'"
+          echo "Is CF_PASSWORD empty: $(test -z "$CF_PASSWORD" && echo true || echo false)"
+          echo "-------------------------"
+          
           echo "Attempting Cloud Foundry login..."
           echo "Debug: CF_USERNAME is empty: $(test -z "$CF_USERNAME" && echo true || echo false)"
           echo "Debug: ACCESS_TOKENCLOUD is empty: $(test -z "$ACCESS_TOKENCLOUD" && echo true || echo false)"
 
           if [ -n "$CF_USERNAME" ] && [ -n "$CF_PASSWORD" ]; then
             echo "Attempting login with username/password..."
-            if cf login -u "$CF_USERNAME" -p "$CF_PASSWORD"; then
+            echo "Using command: cf login -u \"$CF_USERNAME\" -p \"REDACTED\""
+            # Try login with detailed error output
+            if CF_TRACE=true cf login -u "$CF_USERNAME" -p "$CF_PASSWORD" 2>&1; then
               echo "Login successful with username/password."
             else
               echo "Username/password login failed."
+              echo "Exit code: $?"
+              echo "Trying again with verbose output..."
+              CF_TRACE=true cf login -u "$CF_USERNAME" -p "$CF_PASSWORD" || echo "CF login failed with exit code: $?"
+              
+              echo "Trying alternative authentication approach..."
+              # Try passing credentials in a different way
+              echo "$CF_PASSWORD" | cf auth "$CF_USERNAME" || echo "Alternative auth method failed with exit code: $?"
+              
               if [ -n "$ACCESS_TOKENCLOUD" ]; then
                 echo "Attempting login with SSO passcode as fallback..."
                 if cf login --sso-passcode "$ACCESS_TOKENCLOUD"; then
