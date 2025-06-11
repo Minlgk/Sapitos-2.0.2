@@ -14,7 +14,8 @@ const {
   getProveedoresInventario,
   getProductosInventarioPorProveedor,
   getAvailableLocations,
-  actualizarEstatus
+  actualizarEstatus,
+  getProductosWarehouse
 } = require('../controllers/pedidosController');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
@@ -692,5 +693,26 @@ router.get("/locations", getAvailableLocations);
  */
 router.patch("/:id/estatus", actualizarEstatus);
 
+/**
+ * @swagger
+ * /pedido/warehouse/productos:
+ *   get:
+ *     summary: Obtener productos de la warehouse (location_id = 1)
+ *     tags: [Pedidos]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de productos disponibles en la warehouse
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ProductoProveedor'
+ *       500:
+ *         description: Error del servidor
+ */
+router.get("/warehouse/productos", getProductosWarehouse);
 
 module.exports = router;

@@ -3,6 +3,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { jwtDecode } from "jwt-decode"; 
+import { Link } from "react-router-dom";
 
 const InvoiceListProveedor = () => {
   const [pedidos, setPedidos] = useState([]);
@@ -164,19 +165,17 @@ const InvoiceListProveedor = () => {
     const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
     return `${day} ${months[month]} ${year}`;
   };
-
   const getEstadoClass = (estado) => {
-    switch (estado?.toLowerCase()) {
+    const estadoLower = estado?.toLowerCase() || '';
+    switch (estadoLower) {
       case 'completado':
-        return 'text-success';
+        return 'px-12 py-1 rounded-pill fw-medium text-xs bg-success-focus text-success-main';
       case 'pendiente':
-        return 'text-warning';
+        return 'px-12 py-1 rounded-pill fw-medium text-xs bg-warning-focus text-warning-main';
       case 'en reparto':
-        return 'text-primary';
-      case 'cancelado':
-        return 'text-danger';
+        return 'px-12 py-1 rounded-pill fw-medium text-xs bg-primary-focus text-primary-main';
       default:
-        return '';
+        return 'px-12 py-1 rounded-pill fw-medium text-xs bg-secondary-focus text-secondary-main';
     }
   };
 
@@ -215,17 +214,15 @@ const InvoiceListProveedor = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <span className="icon">
-              <Icon icon="ion:search-outline" />
-            </span>
           </div>
           <button 
-            className="btn btn-outline-primary btn-sm"
+            className="w-32-px h-32-px bg-primary-light text-primary-600 rounded-circle d-inline-flex align-items-center justify-content-center"
             onClick={fetchPedidos}
             disabled={loading}
-            title="Actualizar lista"
+            style={{ border: 'none' }}
+            title="Actualizar"
           >
-            <Icon icon={loading ? "mdi:loading" : "mdi:refresh"} className={loading ? "spin" : ""} />
+            <Icon icon='mdi:refresh' width="20" height="20" />
           </button>
         </div>
       </div>
@@ -252,7 +249,7 @@ const InvoiceListProveedor = () => {
                   <th>Precio Total</th>
                   <th>Método Pago</th>
                   <th>Estado</th>
-                  <th>Descripción</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -261,23 +258,38 @@ const InvoiceListProveedor = () => {
                     <tr key={`pedido-${pedido.id}`}>
                       <td>{pedido.numero}</td>
                       <td>#{pedido.id}</td>
-                      <td>{pedido.solicitadoPor}</td>
+                      <td>
+                        <div className="d-flex flex-column">
+                          <span className="fw-medium">{pedido.solicitadoPor}</span>
+                          {pedido.correoSolicitante && (
+                            <small className="text-muted">{pedido.correoSolicitante}</small>
+                          )}
+                        </div>
+                      </td>
                       <td>{pedido.fechaCreacion}</td>
                       <td>{pedido.fechaEntrega}</td>
                       <td>{pedido.cantidadProductos}</td>
-                      <td>${pedido.cantidad}</td>
+                      <td className="fw-medium">${pedido.cantidad}</td>
                       <td>{pedido.metodoPago}</td>
-                      <td className={getEstadoClass(pedido.estado)}>
+                      <td>
+                        <span className={`px-12 py-1 rounded-pill fw-medium text-xs ${
+                          pedido.estado === 'Completado' ? 'bg-success-focus text-success-main' : 
+                          pedido.estado === 'En Reparto' ? 'bg-primary-focus text-primary-main' :
+                          pedido.estado === 'Aprobado' ? 'bg-info-focus text-info-main' :
+                          pedido.estado === 'Rechazado' ? 'bg-danger-focus text-danger-main' :
+                          'bg-warning-focus text-warning-main'
+                        }`}>
                         {pedido.estado}
+                        </span>
                       </td>
                       <td className="align-middle">
                         <button
                           onClick={() => showDetails(pedido)}
-                          className="w-24-px h-24-px bg-primary-light text-primary-main rounded-circle d-inline-flex align-items-center justify-content-center"
+                          className='w-24-px h-24-px me-4 bg-primary-light text-primary-600 rounded-circle d-inline-flex align-items-center justify-content-center'
                           style={{ border: 'none' }}
                           title="Ver detalles"
                         >
-                          <Icon icon="mdi:eye" />
+                          <Icon icon='iconamoon:eye-light' width="24" height="24" />
                         </button>
                       </td>
                     </tr>
@@ -285,10 +297,12 @@ const InvoiceListProveedor = () => {
                 ) : (
                   <tr>
                     <td colSpan="10" className="text-center py-4">
+                      <div className="d-flex flex-column align-items-center gap-2">
                       {searchTerm ? 
                         `No se encontraron pedidos que coincidan con "${searchTerm}"` : 
                         "No hay pedidos aceptados/enviados registrados"
                       }
+                      </div>
                     </td>
                   </tr>
                 )}

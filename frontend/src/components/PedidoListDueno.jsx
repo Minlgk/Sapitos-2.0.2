@@ -7,11 +7,11 @@ import { Button, Form, Badge } from 'react-bootstrap';
 import { notify, NotificationType } from "./NotificationService";
 import getCookie from '../utils/cookies';
 
-const InvoiceListLayer = () => {
+const PedidoListDueno = () => {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
-  const [searchTerm, setSearchTerm] = useState("");  const [filters, setFilters] = useState({
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState({
     proveedor: '',
     estatus: '',
     fechaInicio: '',
@@ -19,7 +19,8 @@ const InvoiceListLayer = () => {
     cantidadMin: '',
     cantidadMax: ''
   });
-  const [showFilters, setShowFilters] = useState(false);  const [filterOptions, setFilterOptions] = useState({
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterOptions, setFilterOptions] = useState({
     proveedores: [],
     estatuses: ["Completado", "Pendiente", "En Reparto"]
   });
@@ -29,8 +30,7 @@ const InvoiceListLayer = () => {
   useEffect(() => {
     fetchPedidos();
   }, []);
-
-    const fetchPedidos = async () => {
+  const fetchPedidos = async () => {
     try {
       setLoading(true);
       
@@ -46,7 +46,7 @@ const InvoiceListLayer = () => {
         // If user is "dueno" and has a location, fetch location-specific orders
         if (userRole === 'dueno' && locationId) {
           // For dueño role, we'll filter pedidos by location on frontend since there's no specific backend endpoint yet
-          endpoint = `${API_BASE_URL}/pedido`;
+          endpoint = "http://localhost:5000/pedido";
         }
       }
       
@@ -184,7 +184,6 @@ const InvoiceListLayer = () => {
   const handleDelete = async (id) => {
     const pedidoId = id.replace("#", "");
   
-  
     try {
       const result = await Swal.fire({
         title: "¿Eliminar pedido?",
@@ -208,7 +207,7 @@ const InvoiceListLayer = () => {
       });
   
       if (result.isConfirmed) {
-        await axios.delete(`${API_BASE_URL}/pedido/${pedidoId}`);
+        await axios.delete(`http://localhost:5000/pedido/${pedidoId}`);
         notify("Pedido eliminado exitosamente", NotificationType.SUCCESS);
         fetchPedidos();
       }
@@ -225,7 +224,7 @@ const InvoiceListLayer = () => {
       try {
 
         if (typeof Swal !== 'undefined') {
-          const response = await axios.put(`${API_BASE_URL}/pedido/${pedido.id.replace("#", "")}/inventario`);
+          const response = await axios.put(`http://localhost:5000/pedido/${pedido.id.replace("#", "")}/inventario`);
             
           Swal.fire({
             icon: "success",
@@ -234,7 +233,7 @@ const InvoiceListLayer = () => {
           });
           fetchPedidos(); 
         } else {
-          const response = await axios.put(`${API_BASE_URL}/pedido/${pedido.id.replace("#", "")}/inventario`);
+          const response = await axios.put(`http://localhost:5000/pedido/${pedido.id.replace("#", "")}/inventario`);
           alert(response.data.message || `Pedido ${pedido.id} enviado al inventario principal correctamente`);
           fetchPedidos();
         }
@@ -273,7 +272,7 @@ const InvoiceListLayer = () => {
     try {
       const pedidoId = pedido.id.replace('#', '');
       
-      await axios.patch(`${API_BASE_URL}/pedido/${pedidoId}/estatus`, {
+      await axios.patch(`http://localhost:5000/pedido/${pedidoId}/estatus`, {
         estatus: "Completado"
       });
       
@@ -329,7 +328,7 @@ const InvoiceListLayer = () => {
             </Button>
           </div>
         </div>
-        <Link to="/crearpedido" id="crearPedidoBtn" className="btn btn-primary btn-sm">
+        <Link to="/pedidowarehouse" id="crearPedidoBtn" className="btn btn-primary btn-sm">
           <Icon icon="ic:baseline-plus" className="icon text-xl" /> Crear Pedido
         </Link>
       </div>{/* Pestaña de filtros colapsible */}
@@ -580,4 +579,4 @@ const InvoiceListLayer = () => {
   );
 };
 
-export default InvoiceListLayer;
+export default PedidoListDueno;

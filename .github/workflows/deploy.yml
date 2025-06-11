@@ -202,7 +202,7 @@ jobs:
           cf set-env Sapitos-backend DB_PASSWORD "$DB_PASSWORD"
           cf set-env Sapitos-backend JWT_SECRET "$JWT_SECRET"
           cf set-env Sapitos-backend BACK_PORT "$BACK_PORT"
-          cf set-env Sapitos-backend AUTH_OTP "true"
+          cf set-env Sapitos-backend AUTH_OTP "false"
           cf set-env Sapitos-backend AUTH_OTP_SECRET "$AUTH_OTP_SECRET"
           cf set-env Sapitos-backend EMAIL_USER "$EMAIL_USER"
           cf set-env Sapitos-backend EMAIL_PASSWORD "$EMAIL_PASSWORD"
@@ -231,7 +231,7 @@ jobs:
                 DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
                 JWT_SECRET: ${{ secrets.JWT_SECRET }}
                 BACK_PORT: ${{ secrets.BACK_PORT }}
-                AUTH_OTP: true
+                AUTH_OTP: false
                 AUTH_OTP_SECRET: ${{ secrets.AUTH_OTP_SECRET }}
                 EMAIL_USER: ${{ secrets.EMAIL_USER }}
                 EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}

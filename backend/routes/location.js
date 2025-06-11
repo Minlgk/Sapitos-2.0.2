@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {
   getLocations,
+  getLocationById,
   createLocation,
   updateLocation,
   deleteLocation
@@ -48,6 +49,26 @@ router.get("/", getLocations);
  *         description: Ubicación creada
  */
 router.post("/", createLocation);
+
+/**
+ * @swagger
+ * /location2/{id}:
+ *   get:
+ *     summary: Obtener una ubicación por ID
+ *     tags: [Location2]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Ubicación encontrada
+ *       404:
+ *         description: Ubicación no encontrada
+ */
+router.get("/:id", getLocationById);
 
 /**
  * @swagger

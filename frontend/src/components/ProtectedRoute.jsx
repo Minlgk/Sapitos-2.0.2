@@ -2,10 +2,9 @@ import { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 
-const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [redirectTo, setRedirectTo] = useState(null);
   const location = useLocation();
   const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
 
@@ -51,45 +50,48 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     const checkAuth = async () => {
       try {
         // Get session from server
-        const cookieResponse = await fetch(`${API_BASE_URL}/users/getSession`, {
+        const response = await fetch(`${API_BASE_URL}/users/getSession`, {
           credentials: "include",
         });
 
-        if (!cookieResponse.ok) {
-          console.log("No valid session found");
-          setRedirectTo("/");
+        if (!response.ok) {
+          setIsAuthorized(false);
           setIsLoading(false);
           return;
         }
 
-        const data = await cookieResponse.json();
+        const data = await response.json();
         
         if (!data.token) {
-          console.log("No token found in session");
-          setRedirectTo("/");
+          setIsAuthorized(false);
           setIsLoading(false);
           return;
         }
 
-        const decoded = jwtDecode(data.token);
-        const userRole = decoded.rol || "";
-
-        const roleAuthorized = allowedRoles.length === 0 || 
-                            allowedRoles.includes(userRole);
-                            
-        if (!roleAuthorized) {
-          console.log("User role not authorized");
-          setRedirectTo("/dashboard");
+        let userRole;
+        try {
+          const decoded = jwtDecode(data.token);
+          userRole = decoded.rol;
+        } catch (error) {
+          setIsAuthorized(false);
           setIsLoading(false);
           return;
         }
+
+        // Verificar si el rol está permitido
+        const isRoleAuthorized = allowedRoles.length === 0 || allowedRoles.includes(userRole);
         
+        if (!isRoleAuthorized) {
+          setIsAuthorized(false);
+          setIsLoading(false);
+          return;
+        }
+
         setIsAuthorized(true);
         setIsLoading(false);
-        
       } catch (error) {
-        console.error("Error checking authentication:", error);
-        setRedirectTo("/");
+        console.error("Error verificando autenticación:", error);
+        setIsAuthorized(false);
         setIsLoading(false);
       }
     };
@@ -110,8 +112,9 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     );
   }
 
-  if (!isAuthorized && redirectTo) {
-    return <Navigate to={redirectTo} replace />;
+  if (!isAuthorized) {
+    // Redirigir al login y guardar la ubicación intentada
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   return children;

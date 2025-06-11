@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Table, Form, InputGroup, Button, Modal, Dropdown, Badge } from 'react-bootstrap';
 import { Icon } from "@iconify/react/dist/iconify.js";
 import axios from 'axios';
+import getCookie from '../utils/cookies';
+import './Inventory.css';
 
 const Inventory = () => {
   const [inventory, setInventory] = useState([]);
@@ -31,7 +33,7 @@ const Inventory = () => {
     const fetchInventory = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_BASE_URL}/inventory`, {
+        let response = await axios.get(`${API_BASE_URL}/inventory`, {
           withCredentials: true
         });
         console.log('Datos del inventario:', response.data);
@@ -55,6 +57,25 @@ const Inventory = () => {
           setInventory([]);
           setError('Formato de datos inesperado del servidor');
         }
+        
+        // Get user data from cookie to determine role and location
+        const cookieData = getCookie("UserData");
+        let endpoint = '/inventory'; // default endpoint for admin
+        
+        if (cookieData) {
+          const userData = typeof cookieData === 'string' ? JSON.parse(cookieData) : cookieData;
+          const userRole = userData?.ROL;
+          const locationId = userData?.LOCATION_ID || userData?.locationId;
+          
+          // If user is "dueno" and has a location, fetch location-specific inventory
+          if (userRole === 'dueno' && locationId) {
+            endpoint = `/inventory/location/${locationId}`;
+          }
+        }
+        
+        // Use the same response variable
+        response = await axios.get(endpoint);        console.log('Tipo de response.data:', typeof response.data, response.data);
+        setInventory(response.data);
         
         setError(null);
       } catch (err) {
@@ -197,15 +218,17 @@ const Inventory = () => {
             </span>
           </div>
         </div>        <div className='d-flex flex-wrap align-items-center gap-3'>
-          <Button 
+          <button 
             id="btnExportarCSV"
-            variant="success" 
+            className="btn-export-excel"
             onClick={exportToCSV}
-            className="btn-sm"
-            size="sm"
           >
-            <Icon icon="bi:download" /> Exportar CSV
-          </Button>
+            <Icon 
+              icon="mdi:microsoft-excel" 
+              className="icon"
+            />
+            Exportar Excel
+          </button>
           <Button 
             variant="outline-primary" 
             onClick={() => setShowFilters(!showFilters)}

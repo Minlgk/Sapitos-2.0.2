@@ -34,9 +34,7 @@ const NavbarHeader = ({ sidebarActive, sidebarControl, mobileMenuControl }) => {
             token: data.token
           };
           
-          setUserData(formattedUserData);
-
-          // Fetch location details if user has a location ID
+          setUserData(formattedUserData);          // Fetch location details if user has a location ID
           if (formattedUserData.LOCATION_ID) {
             const locationResponse = await fetch(`${API_BASE_URL}/location2/${formattedUserData.LOCATION_ID}`);
             if (locationResponse.ok) {

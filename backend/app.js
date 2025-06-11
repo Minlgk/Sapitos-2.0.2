@@ -1,4 +1,10 @@
-require("dotenv").config();
+try {
+  require("dotenv").config();
+} catch (error) {
+  console.log("dotenv not available, using environment variables directly");
+  // This is fine in production where environment variables are set directly
+}
+
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require('cookie-parser');  
@@ -19,23 +25,45 @@ const alertasRoutes = require("./routes/alertas"); // Added Alertas routes
 const aiRoutes = require("./Ai_OpenAI/aiRoutes");
 const pedidosHelperRoutes = require("./routes/pedidosH");
 const kpiRoutes = require("./routes/kpi.js");
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 
+// Log the frontend URL from environment variables
+console.log("FRONTEND_URL from env:", process.env.FRONTEND_URL);
+
+// Create a more permissive CORS configuration for debugging purposes
+// WARNING: This is only for testing and development!
 const corsOptions = {
-  origin: [
-    process.env.FRONTEND_URL,
-    "https://sapitos-frontend.cfapps.us10-001.hana.ondemand.com", "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com"
-  ],
-  methods: "GET,POST,PUT,DELETE",
+  origin: true, // Allow all origins - for testing only
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept', 'Cache-Control', 'Pragma', 'Expires'],
+  preflightContinue: false,
+  maxAge: 86400, // Preflight results cached for 24 hours
+  optionsSuccessStatus: 204
 };
+
+// Apply CORS middleware
 app.use(cors(corsOptions));
+
+// Handle OPTIONS preflight requests separately to ensure they respond properly
+app.options('*', cors(corsOptions));
+
+// Add headers to all responses
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin, Accept, Cache-Control, Pragma, Expires');
+  next();
+});
 
 app.use(cookieParser()); 
 
+// Make sure Express properly parses JSON requests
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // OTP routes
 app.use("/api/otp", otpRoutes); 
@@ -75,6 +103,7 @@ app.use("/proveedor", pedidosProveedorRoutes);
 app.use("/proveedores", pedidoRoutes);
 app.use("/pedidosH", pedidosHRoutes);
 app.use("/proveedor", pedidosProveedorRoutes);
+app.use('/admin', adminRoutes);
 
 // rutas para el asistente de IA 
 app.use("/api/ai", aiRoutes);

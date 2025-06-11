@@ -2,66 +2,23 @@ import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import axios from "axios";
 import Swal from "sweetalert2";
-import { jwtDecode } from "jwt-decode";
 
-const InvoiceProveedor = () => {
+const OrdenesPymes = () => {
   const [pedidos, setPedidos] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
 
   useEffect(() => {
     fetchPedidos();
   }, []);
 
-  // Funcion pricipal para obtener los pedidos
-  // Verifica la sesión del usuario y obtiene el locationId
   const fetchPedidos = async () => {
     try {
       setLoading(true);
-      console.log("Loading...");
-      
-      // Intentar obtener la sesión utilizando el mismo API_BASE_URL
-      const sessionResponse = await fetch(`${API_BASE_URL}/users/getSession`, {
-        credentials: "include", 
-      });
-
-      if (!sessionResponse.ok) {
-        throw new Error("No se pudo verificar la sesión");
-      }
-
-      const sessionData = await sessionResponse.json();
-      console.log("Session Data: ", sessionData);
-      
-      let locationId;
-      let roleId;
-
-      if (sessionData.usuario && sessionData.usuario.locationId) {
-        locationId = sessionData.usuario.locationId; 
-        roleId = sessionData.usuario.ROL_ID; 
-      } else if (sessionData.token) {
-        try {
-          const decoded = jwtDecode(sessionData.token);
-          locationId = decoded.locationId;
-          roleId = decoded.roleId;
-        } catch (e) {
-          throw new Error("Error al decodificar el token");
-        }
-      }
-
-      if (!locationId) {
-        throw new Error("Location ID no encontrado en la sesión");
-      }
-
-      // Usar el URL correcto para obtener los pedidos del proveedor
-      const url = `${API_BASE_URL}/proveedor/pedidos/${locationId}`;
-      console.log("Fetching orders from:", url);
-      
-      const response = await fetch(url, {
-        method: 'GET',
-        credentials: 'include', 
+      const response = await fetch('http://localhost:5000/admin/pedidos-pymes', {
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
         }
@@ -73,12 +30,6 @@ const InvoiceProveedor = () => {
       }
 
       const data = await response.json();
-      
-      if (!Array.isArray(data)) {
-        console.error("Los datos recibidos no son un array:", data);
-        throw new Error("Formato de datos inesperado del servidor");
-      }
-      
       const formattedPedidos = data.map((pedido, index) => ({
         numero: String(index + 1).padStart(2, '0'),
         id: pedido.id,
@@ -116,9 +67,9 @@ const InvoiceProveedor = () => {
     const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
     return `${day} ${months[month]} ${year}`;
   };
+
   const handleActualizarEstatus = async (id, nuevoEstatus) => {
     try {
-      // Mostrar confirmación antes de proceder
       const result = await Swal.fire({
         title: '¿Estás seguro?',
         text: `¿Deseas aceptar este pedido? El estado cambiará a "En Reparto".`,
@@ -130,53 +81,37 @@ const InvoiceProveedor = () => {
         cancelButtonText: 'Cancelar'
       });
 
-      if (!result.isConfirmed) {
-        return;
-      }
+      if (!result.isConfirmed) return;
 
-      // Endpoint para aceptar pedido (cambia a "En Reparto")
-      const endpoint = `http://localhost:5000/proveedor/pedido/${id}/aprobar`;
-      
-      console.log("Aceptando pedido:", id);
-      console.log("Endpoint:", endpoint);
-      
+      const endpoint = `http://localhost:5000/admin/pedido-pyme/${id}/aprobar`;
       const response = await axios.put(endpoint, {}, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
-        }
+        },
+        withCredentials: true
       });
-      
+
       console.log("Respuesta de actualización:", response.data);
-      
+
       Swal.fire({
         icon: "success",
         title: "Pedido Aceptado",
         text: "El pedido ha sido aceptado y está ahora En Reparto"
       });
-      
-      // Recargar la lista de pedidos
+
       fetchPedidos();
-      
     } catch (error) {
       console.error("Error al aceptar el pedido:", error);
-      console.error("Respuesta completa del error:", error.response);
-      
-      const errorMessage = error.response?.data?.error || 
-                          error.response?.data?.message || 
-                          "No se pudo aceptar el pedido";
-      
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: errorMessage
+        text: error.response?.data?.error || "No se pudo aceptar el pedido"
       });
     }
   };
 
   const handleRechazarPedido = async (id) => {
     try {
-      // Mostrar confirmación antes de proceder
       const result = await Swal.fire({
         title: '¿Estás seguro?',
         text: '¿Deseas rechazar este pedido? Esta acción no se puede deshacer.',
@@ -188,147 +123,66 @@ const InvoiceProveedor = () => {
         cancelButtonText: 'Cancelar'
       });
 
-      if (!result.isConfirmed) {
-        return;
-      }
+      if (!result.isConfirmed) return;
 
-      // Endpoint para rechazar pedido
-      const endpoint = `http://localhost:5000/proveedor/pedido/${id}/rechazar`;
-      
-      console.log("Rechazando pedido:", id);
-      console.log("Endpoint:", endpoint);
-      
+      const endpoint = `http://localhost:5000/admin/pedido-pyme/${id}/rechazar`;
       const response = await axios.put(endpoint, {}, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json'
-        }
+        },
+        withCredentials: true
       });
-      
-      console.log("Respuesta de rechazo:", response.data);
-      
+
       Swal.fire({
         icon: "success",
         title: "Pedido Rechazado",
         text: "El pedido ha sido rechazado exitosamente"
       });
-      
-      // Recargar la lista de pedidos
+
       fetchPedidos();
-      
     } catch (error) {
       console.error("Error al rechazar el pedido:", error);
-      console.error("Respuesta completa del error:", error.response);
-      
-      const errorMessage = error.response?.data?.error || 
-                          error.response?.data?.message || 
-                          "No se pudo rechazar el pedido";
-      
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: errorMessage
-      });    }
-  };
-
-  const handleEnviarPedido = async (id) => {
-    try {
-      const result = await Swal.fire({
-        title: '¿Enviar pedido?',
-        text: 'Esto marcará el pedido como "En Reparto" y actualizará el inventario',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#17a2b8',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Sí, enviar',
-        cancelButtonText: 'Cancelar'
-      });
-
-      if (!result.isConfirmed) {
-        return;
-      }
-
-      // Usar fetch en lugar de axios para mantener consistencia con otros llamados
-      const response = await fetch(
-        `${API_BASE_URL}/proveedor/pedido/${id}/enviar`, 
-        {
-          method: 'PUT',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || errorData.message || 'No se pudo enviar el pedido');
-      }
-      
-      const responseData = await response.json();
-      
-      Swal.fire({
-        icon: "success",
-        title: "Pedido Enviado",
-        text: responseData.message || "Pedido enviado exitosamente"
-      });
-      
-      fetchPedidos();
-      
-    } catch (error) {
-      console.error("Error al enviar el pedido:", error);
-      
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: error.message || "No se pudo enviar el pedido"
+        text: error.response?.data?.error || "No se pudo rechazar el pedido"
       });
     }
   };
 
   const handleVerDetalles = async (id) => {
     try {
-      // Usar fetch en lugar de axios para mantener consistencia con otros llamados
-      const response = await fetch(
-        `${API_BASE_URL}/proveedor/pedido/${id}/detalle`,
+      const response = await axios.get(
+        `http://localhost:5000/admin/pedido-pyme/${id}/detalle`,
         {
-          method: 'GET',
-          credentials: 'include',
           headers: {
             'Content-Type': 'application/json'
-          }
+          },
+          withCredentials: true
         }
       );
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || errorData.message || 'No se pudieron cargar los detalles');
-      }
-      
-      const responseData = await response.json();
-      
       setSelectedPedido({
         id,
-        detalles: responseData
+        detalles: response.data
       });
       setShowDetails(true);
-      
     } catch (error) {
       console.error("Error al obtener detalles:", error);
-      
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: error.message || "No se pudieron cargar los detalles del pedido"
+        text: "No se pudieron cargar los detalles del pedido"
       });
     }
   };
 
-  const pedidosFiltrados = Array.isArray(pedidos) ? pedidos.filter(pedido =>
+  const pedidosFiltrados = pedidos.filter(pedido =>
     (pedido.solicitadoPor || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     (pedido.displayId || "").includes(searchTerm) ||
     (pedido.organizacion || "").toLowerCase().includes(searchTerm.toLowerCase())
-  ) : [];
+  );
+
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case 'Pendiente': return 'px-12 py-1 rounded-pill fw-medium text-xs bg-warning-focus text-warning-main';
@@ -337,6 +191,7 @@ const InvoiceProveedor = () => {
       default: return 'px-12 py-1 rounded-pill fw-medium text-xs bg-secondary-focus text-secondary-main';
     }
   };
+
   const getActionButtons = (pedido) => {
     switch (pedido.estatus) {
       case 'Pendiente':
@@ -369,28 +224,6 @@ const InvoiceProveedor = () => {
           </div>
         );
       
-      case 'Aprobado':
-        return (
-          <div className="d-flex gap-2">
-            <button 
-              onClick={() => handleEnviarPedido(pedido.id)}
-              className='w-32-px h-32-px bg-info-focus text-info-main rounded-circle d-inline-flex align-items-center justify-content-center'
-              style={{ border: 'none' }}
-              title="Enviar pedido"
-            >
-              <Icon icon='mdi:truck-delivery' width="24" height="24" />
-            </button>
-            <button 
-              onClick={() => handleVerDetalles(pedido.id)}
-              className='w-32-px h-32-px bg-primary-light text-primary-600 rounded-circle d-inline-flex align-items-center justify-content-center'
-              style={{ border: 'none' }}
-              title="Ver detalles"
-            >
-              <Icon icon='iconamoon:eye-light' width="24" height="24" />
-            </button>
-          </div>
-        );
-      
       default:
         return (
           <div className="d-flex gap-2">
@@ -411,7 +244,7 @@ const InvoiceProveedor = () => {
     <div className='card'>
       <div className='card-header d-flex flex-wrap align-items-center justify-content-between gap-3'>
         <div className='d-flex flex-wrap align-items-center gap-3'>
-          <span>Gestión de Pedidos</span>
+          <span>Gestión de Pedidos PYMES</span>
           <div className='icon-field'>
             <input
               type='text'
@@ -586,5 +419,4 @@ const InvoiceProveedor = () => {
   );
 };
 
-
-export default InvoiceProveedor;
+export default OrdenesPymes; 

@@ -43,6 +43,7 @@ const AiAssistantPage = () => {
   const [showDropdownSuggestions, setShowDropdownSuggestions] = useState(false);
   const chatContainerRef = useRef(null);
   const inputRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     // Obtener datos del usuario de la cookie
@@ -72,6 +73,19 @@ const AiAssistantPage = () => {
     if (inputRef.current) {
       inputRef.current.focus();
     }
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdownSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const handleSuggestedQuestion = (q) => {
@@ -134,18 +148,18 @@ const AiAssistantPage = () => {
               <h6 className='text-md mb-0'>Asistente IA</h6>
               <p className='mb-0'>Disponible</p>
             </div>
-            <div className='btn-group ms-auto'>
+            <div className='btn-group ms-auto' ref={dropdownRef}>
               <button
                 type='button'
-                className='text-primary-light text-xl'
-                data-bs-toggle='dropdown'
-                data-bs-display='static'
-                aria-expanded='false'
-                onClick={() => setShowDropdownSuggestions(!showDropdownSuggestions)}
+                className='text-primary-light text-xl border-0 bg-transparent'
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowDropdownSuggestions(!showDropdownSuggestions);
+                }}
               >
                 <Icon icon='tabler:dots-vertical' />
               </button>
-              <ul className={`dropdown-menu dropdown-menu-end border ${showDropdownSuggestions ? 'd-block' : 'd-none'}`}>                
+              <ul className={`dropdown-menu dropdown-menu-end border ${showDropdownSuggestions ? 'show' : ''}`}>                
                 {Object.entries(SUGGESTED_QUESTIONS).map(([category, questions]) => (
                   <li key={category} className="px-3 py-2">
                     <strong className='small'>{category.charAt(0).toUpperCase() + category.slice(1)}:</strong>
@@ -262,6 +276,37 @@ const AiAssistantPage = () => {
             }
             .rounded-chat-user {
               border-top-right-radius: 0 !important;
+            }
+            .btn-group {
+              position: relative;
+            }
+            .dropdown-menu {
+              position: absolute;
+              right: 0;
+              left: auto;
+              max-height: 80vh;
+              overflow-y: auto;
+              transform: translateY(0);
+            }
+            .dropdown-menu.show {
+              transform: none !important;
+              top: 100% !important;
+              margin-top: 0.5rem;
+            }
+            @media (max-width: 768px) {
+              .dropdown-menu {
+                position: fixed;
+                top: auto !important;
+                bottom: 100%;
+                right: 1rem;
+                left: 1rem;
+                transform: none;
+                max-height: calc(100vh - 200px);
+              }
+              .dropdown-menu.show {
+                bottom: auto;
+                top: 4rem !important;
+              }
             }
           `}
         </style>

@@ -177,42 +177,12 @@ const DashBoardLayerOne = () => {
   // Si el usuario no tiene ubicación asignada, mostrar el componente especial
   if (!loading && locationError === "Usuario sin ubicación asignada") {
     return <LocationNotAssigned userRole={userData?.ROL} />;
-  }
-
-  return (
+  }  return (
     <>
-      {/* Location Header */}
-      <div className="row mb-4">
-        <div className="col-12">
-          <div className="d-flex align-items-center gap-3 border-bottom pb-3">
-            {loading ? (
-              <div className="d-flex justify-content-center">
-                <div className="spinner-border text-primary" role="status">
-                  <span className="visually-hidden">Cargando...</span>
-                </div>
-              </div>
-            ) : userLocation ? (
-              <>
-                <Icon icon="mdi:map-marker" className="text-primary fs-4" />
-                <span className="text-primary fw-semibold fs-5">{userLocation.nombre}</span>
-                <span className="text-secondary-light fs-6">({userLocation.organizacion || ""})</span>
-              </>
-            ) : locationError ? (
-              <div className="d-flex align-items-center gap-2 text-warning">
-                <Icon icon="mdi:alert-circle" />
-                <span>{locationError}</span>
-              </div>
-            ) : (
-              <div className="text-muted">
-                No se encontró información de ubicación
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* UnitCountOne */}
-      <UnitCountOne kpiData={kpiData} />
+      <div className="mt-4">
+        <UnitCountOne kpiData={kpiData} />
+      </div>
 
       <section className='row gy-4 mt-1'>
         {/* SalesStatisticOne */}

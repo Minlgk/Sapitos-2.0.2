@@ -1,9 +1,15 @@
----
 applications:
-  - name: sapitos-frontend
-    memory: 64M
+  - name: ((app-name))
+    memory: ((memory))
     buildpacks:
       - staticfile_buildpack
     path: dist
     routes:
-      - route: sapitos-frontend.cfapps.us10-001.hana.ondemand.com
+      - route: ((route))
+    env:
+      REACT_APP_BACKEND_URL: ((backend-url))
+      REACT_APP_FRONTEND_URL: ((frontend-url))
+      FORCE_HTTPS: true
+    # Configuración para manejar rutas de SPA
+    command: null # Usar configuración del buildpack
+    stack: cflinuxfs4

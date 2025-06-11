@@ -40,11 +40,12 @@ const Sidebar = ({ sidebarActive, mobileMenu, mobileMenuControl }) => {
             className='logo-icon'
           />
         </Link>
-      </div>
-      <div className='sidebar-menu-area'>
+      </div>      <div className='sidebar-menu-area'>
         <ul className='sidebar-menu' id='sidebar-menu'>
             <SidebarButton to='/dashboard' icon='solar:home-smile-angle-outline' label='Estadisticas' />
-            <SidebarButton to='/asistente-ia' icon='simple-icons:openai' label='Asistente IA' />
+            <SidebarButton to='/inventario' icon='fluent:box-20-filled' label='Inventario' />
+            <SidebarButton to='/pedidosdueno' icon='hugeicons:invoice-03' label='Ordenes' />
+            <SidebarButton to='/ai-assistant' icon='simple-icons:openai' label='Asistente IA' />
         </ul>
       </div>
     </aside>

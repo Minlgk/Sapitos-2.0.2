@@ -1,2 +1,3 @@
-root: .
-pushstate: enabled 
+root: dist
+pushstate: enabled
+directory: visible 

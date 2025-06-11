@@ -41,7 +41,7 @@ const { auth } = require('../middleware/auth');
  *       500:
  *         description: Error del servidor
  */
-router.get("/metodos-pago", getMetodosPago);
+router.get("/metodos-pago", auth(), getMetodosPago);
 
 /**
  * @swagger
@@ -68,7 +68,7 @@ router.get("/metodos-pago", getMetodosPago);
  *       500:
  *         description: Error del servidor
  */
-router.get("/roles", getRoles);
+router.get("/roles", auth(), getRoles);
 
 /**
  * @swagger
@@ -145,8 +145,8 @@ router.get("/roles", getRoles);
  *       500:
  *         description: Error del servidor
  */
-router.get("/locations", getLocations);
-router.post("/locations", insertLocation);
+router.get("/locations", auth(), getLocations);
+router.post("/locations", auth(), insertLocation);
 
 /**
  * @swagger
@@ -199,7 +199,7 @@ router.post("/locations", insertLocation);
  *       500:
  *         description: Error del servidor
  */
-router.get("/locations/tipo/:tipo", getLocationsPorTipo);
+router.get("/locations/tipo/:tipo", auth(), getLocationsPorTipo);
 
 /**
  * @swagger
@@ -308,9 +308,9 @@ router.get("/locations/tipo/:tipo", getLocationsPorTipo);
  *       500:
  *         description: Error del servidor
  */
-router.get("/locations/:id", getLocationById);
-router.put("/locations/:id", updateLocation);
-router.delete("/locations/:id", deleteLocation);
+router.get("/locations/:id", auth(), getLocationById);
+router.put("/locations/:id", auth(), updateLocation);
+router.delete("/locations/:id", auth(), deleteLocation);
 
 /**
  * @swagger
@@ -361,7 +361,7 @@ router.delete("/locations/:id", deleteLocation);
  *       500:
  *         description: Error del servidor
  */
-router.get("/locations/estadisticas", getEstadisticasLocations);
+router.get("/locations/estadisticas", auth(), getEstadisticasLocations);
 
 /**
  * @swagger
@@ -388,7 +388,7 @@ router.get("/locations/estadisticas", getEstadisticasLocations);
  *       500:
  *         description: Error del servidor
  */
-router.get("/tipos-location", getTiposLocation);
+router.get("/tipos-location", auth(), getTiposLocation);
 
 /**
  * @swagger
@@ -444,6 +444,6 @@ router.get("/tipos-location", getTiposLocation);
  *       500:
  *         description: Error del servidor
  */
-router.get("/locations/cercanas", getLocationsCercanas);
+router.get("/locations/cercanas", auth(), getLocationsCercanas);
 
 module.exports = router;

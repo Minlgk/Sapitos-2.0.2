@@ -4,17 +4,17 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import { Link } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import ErrorDialog from "../components/ErrorDialog";
+import { useAuth } from '../components/AuthHandler';
 import './SignInPage.css';
 
 const SignInPage = () => {
+  const { isAuthenticated } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const hasCheckedSession = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [checkingSession, setCheckingSession] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
@@ -37,76 +37,11 @@ const SignInPage = () => {
   }, [countdown, resendDisabled]);
 
   useEffect(() => {
-    if (hasCheckedSession.current) return;
-    hasCheckedSession.current = true;
-    
-    const checkSession = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/users/getSession`, {
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          await clearInvalidSession();
-          setCheckingSession(false);
-          setLoading(false);
-          return;
-        }
-
-        const data = await response.json();
-
-        if (data.requiresOtp) {
-          await generateOTP();
-          setCheckingSession(false);
-          return;
-        }
-
-        let userRole;
-        
-        if (data.usuario && data.usuario.rol) {
-          userRole = data.usuario.rol;
-        } else if (data.token) {
-          try {
-            const decoded = jwtDecode(data.token);
-            userRole = decoded.rol;
-          } catch {
-            await clearInvalidSession();
-            setCheckingSession(false);
-            return;
-          }
-        } else {
-          setCheckingSession(false);
-          return;
-        }
-
-        if (
-          (userRole === "admin" || userRole === "dueno" || userRole === "cliente" || userRole === "proveedor") &&
-          window.location.pathname !== "/dashboard"
-        ) {
-          navigate("/dashboard");
-        }
-      } catch (error) {
-        console.error("Error checking session:", error);
-        await clearInvalidSession();
-      } finally {
-        setCheckingSession(false);
-        setLoading(false);
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
       }
-    };
+  }, [isAuthenticated, navigate]);
 
-    const clearInvalidSession = async () => {
-      try {
-        await fetch(`${API_BASE_URL}/users/logoutUser`, {
-          method: "POST",
-          credentials: "include",
-        });
-      } catch (error) {
-        console.error("Error limpiando sesión:", error);
-      }
-    };
-
-    checkSession();
-  }, [navigate, API_BASE_URL]);
   const handleLogin = async (event) => {
     event.preventDefault();
     setIsLoading(true);
@@ -141,22 +76,19 @@ const SignInPage = () => {
         throw new Error("Datos de sesión incompletos");
       }
 
-      if (data.requiresOtp) {
+      // Verificar el dominio del correo
+      const emailDomain = email.toLowerCase().split('@')[1];
+      const allowedDomains = ['gmail.com', 'outlook.com', 'hotmail.com', 'tec.mx'];
+      const requiresOtp = allowedDomains.includes(emailDomain);
+
+      if (data.requiresOtp && requiresOtp) {
         const otpData = await generateOTP();
         if (otpData && otpData.secret) {
           setOtpSecret(otpData.secret);
         }
         setIsLoginMode(false);
       } else {
-        // Redirect immediately without setTimeout to prevent flashing
-        console.log("Login successful, redirecting to dashboard");
-        
-        // Set a flag in sessionStorage to indicate we're completing login
-        // This helps avoid redirect loops
-        sessionStorage.setItem('loginInProgress', 'true');
-        
-        // Navigate immediately
-        navigate('/dashboard', { replace: true });
+        window.location.href = '/dashboard';
       }
 
     } catch (error) {
@@ -262,7 +194,7 @@ const SignInPage = () => {
     setError('');
 
     try {
-      const response = await fetch("http://localhost:5000/api/otp/verify", {
+      const response = await fetch(`${API_BASE_URL}/api/otp/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -279,9 +211,7 @@ const SignInPage = () => {
       }
 
       if (data.verified) {
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 500);
+        window.location.href = '/dashboard';
       } else {
         throw new Error("Código de verificación inválido");
       }
@@ -302,11 +232,32 @@ const SignInPage = () => {
     await generateOTP();
   };
 
+  const handleReturnToSignIn = async () => {
+    try {
+      // Limpiar la sesión en el backend
+      await fetch(`${API_BASE_URL}/users/logoutUser`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      // Resetear estados locales
+      setOtpValues(['', '', '', '', '', '']);
+      setOtpSecret("");
+      setEmail("");
+      setPassword("");
+      setError("");
+      setIsLoginMode(true);
+      
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
+  };
+
   const handleCloseDialog = () => {
     setDialogOpen(false);
   };
 
-  if (checkingSession) {
+  if (isAuthenticated) {
     return (
       <section className='auth bg-base d-flex flex-wrap'>
         <div className='auth-right py-32 px-24 d-flex flex-column justify-content-center w-100'>
@@ -398,9 +349,26 @@ const SignInPage = () => {
               </form>
 
               {/* FORMULARIO DE VERIFICACIÓN OTP */}
-              <form onSubmit={(e) => { e.preventDefault(); handleVerifyOtp(); }} className='sign-up-form'>
-                <div className="text-center" style={{ marginTop: '-2rem', marginBottom: '2.5rem' }}>
-                  <img src="/assets/images/logo.png" alt="Logo" className="img-fluid" style={{ maxWidth: '220px' }} />
+              <form onSubmit={(e) => { e.preventDefault(); handleVerifyOtp(); }} className='sign-up-form' style={{ position: 'relative' }}>
+                <div className="text-center" style={{ 
+                  marginTop: '2rem', 
+                  marginBottom: '2rem', 
+                  position: 'relative',
+                  zIndex: '9999',
+                  backgroundColor: 'white'
+                }}>
+                  <img 
+                    src="/assets/images/logo.png" 
+                    alt="Logo" 
+                    className="img-fluid" 
+                    style={{ 
+                      maxWidth: '220px', 
+                      position: 'relative', 
+                      zIndex: '9999',
+                      display: 'block',
+                      margin: '0 auto'
+                    }} 
+                  />
                 </div>
                 <div className="text-center mb-4">
                   <h2 className='mb-3' style={{ fontSize: '2.2rem', fontWeight: '600' }}>Verificación de seguridad</h2>
@@ -451,8 +419,8 @@ const SignInPage = () => {
                       </>
                     ) : (
                       <>
-                        <Icon icon="solar:shield-check-bold" className="me-2" />
-                        <span>Verificar código</span>
+                    <Icon icon="solar:shield-check-bold" className="me-2" />
+                    <span>Verificar código</span>
                       </>
                     )}
                   </button>
@@ -465,6 +433,25 @@ const SignInPage = () => {
                       disabled={resendDisabled}
                     >
                       {resendDisabled ? `Reenviar código (${countdown}s)` : 'Reenviar código'}
+                    </button>
+                  </div>
+
+                  <div className="text-center mt-4">
+                    <button 
+                      type="button" 
+                      className="btn btn-outline-danger"
+                      onClick={handleReturnToSignIn}
+                      style={{
+                        padding: '0.75rem 2rem',
+                        borderRadius: '8px',
+                        fontSize: '1rem',
+                        borderColor: '#dc3545',
+                        color: '#dc3545',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      <Icon icon="mdi:arrow-left" className="me-2" />
+                      Regresar
                     </button>
                   </div>
 
@@ -496,7 +483,7 @@ const SignInPage = () => {
               />
             </div>
             <div className='panel right-panel'>
-              <img src='assets/images/auth/auth-img.png' className='image' alt='' />
+              <img src='assets/images/auth/auth-img2.png' className='image' alt='' />
             </div>
           </div>
         </div>

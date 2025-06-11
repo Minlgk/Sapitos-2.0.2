@@ -1,0 +1,5 @@
+app-name: sapitos-frontend
+memory: 64M
+route: sapitos-frontend.cfapps.us10-001.hana.ondemand.com
+backend-url: https://sapitos-backend.cfapps.us10-001.hana.ondemand.com/
+frontend-url: https://sapitos-frontend.cfapps.us10-001.hana.ondemand.com/

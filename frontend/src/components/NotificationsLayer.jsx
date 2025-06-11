@@ -297,11 +297,14 @@ const NotificationsLayer = () => {
             )}
           </h6>
           <button 
-            className="btn btn-sm btn-outline-primary"
+            className="refresh-button"
             onClick={fetchNotifications}
             disabled={loading}
           >
-            <Icon icon="mdi:refresh" className={loading ? "animate-spin" : ""} />
+            <Icon 
+              icon="mdi:refresh" 
+              className={`text-xl ${loading ? "animate-spin" : ""}`}
+            />
           </button>
         </div>
         <div className='card-body p-24 d-flex flex-column gap-3'>

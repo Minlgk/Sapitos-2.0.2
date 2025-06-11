@@ -1,4 +1,10 @@
-require("dotenv").config();
+try {
+  require("dotenv").config();
+} catch (error) {
+  console.log("dotenv not available, using environment variables directly");
+  // This is fine in production where environment variables are set directly
+}
+
 const { connectDB } = require("./config/db"); // Updated import
 const app = require("./app");
 const logger = require('./utils/logger');
@@ -17,8 +23,8 @@ app.listen(PORT, async () => {
     
     // Connect to database
     await connectDB();
-    logger.info(`Server running on http://localhost:${PORT}`);
-    logger.info(`API documentation available at http://localhost:${PORT}/api-docs`);
+    logger.info(`Server running on port ${PORT}`);
+    logger.info(`API documentation available at /api-docs`);
     
     // Initialize the stock update scheduler silently
     initializeScheduler();

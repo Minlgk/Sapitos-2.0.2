@@ -120,12 +120,9 @@ const getModelStatus = async (req, res) => {
     try {
         // For testing purposes, return a random status
         // In production, this would check the actual model status
-        const statusOptions = ['active', 'inactive'];
-        const status = statusOptions[Math.floor(Math.random() * statusOptions.length)];
-        
         return res.status(200).json({
             success: true,
-            status: status,
+            status: 'active',
             lastUpdated: new Date().toISOString()
         });
     } catch (error) {

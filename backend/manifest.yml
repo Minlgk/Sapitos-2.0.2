@@ -3,6 +3,26 @@ applications:
     memory: 512M
     buildpacks:
       - nodejs_buildpack
-    path: .
-    command: node server.js
-health-check-type: process
+    command: npm start
+    health-check-type: process
+    env:
+      NPM_CONFIG_PRODUCTION: false
+      NODE_ENV: production
+    routes:
+      - route: sapitos-backend.cfapps.us10-001.hana.ondemand.com
+    env:
+      SERVER_NODE: ((server-node))
+      DB_USERNAME: ((db-username))
+      DB_PASSWORD: ((db-password))
+      JWT_SECRET: ((jwt-secret))
+      BACK_PORT: ((back-port))
+      BACKEND_URL: ((backend-url))
+      FRONTEND_URL: ((frontend-url))
+      AUTH_OTP: ((auth-otp))
+      AUTH_OTP_SECRET: ((auth-otp-secret))
+      EMAIL_USER: ((email-user))
+      EMAIL_PASSWORD: ((email-password))
+      EMAIL_HOST: ((email-host))
+      EMAIL_PORT: ((email-port))
+      EMAIL_FROM: ((email-from))
+      OPENAI_API_KEY: ((openai-api-key))

@@ -7,6 +7,17 @@ const getLocations = (req, res) => {
   });
 };
 
+const getLocationById = (req, res) => {
+  const { id } = req.params;
+  const query = "SELECT * FROM Location2 WHERE Location_ID = ?";
+
+  connection.exec(query, [id], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (rows.length === 0) return res.status(404).json({ error: "Location not found" });
+    res.json(rows[0]);
+  });
+};
+
 const createLocation = (req, res) => {
   const { Nombre, Tipo, PosicionX, PosicionY, FechaCreado, Organizacion } = req.body;
   const query = `INSERT INTO Location2 (Nombre, Tipo, PosicionX, PosicionY, FechaCreado, Organizacion) VALUES (?, ?, ?, ?, ?, ?)`;
@@ -46,6 +57,7 @@ const deleteLocation = (req, res) => {
 
 module.exports = {
   getLocations,
+  getLocationById,
   createLocation,
   updateLocation,
   deleteLocation

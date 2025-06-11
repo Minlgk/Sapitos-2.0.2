@@ -15,11 +15,11 @@ const NavbarHeader = ({ sidebarActive, sidebarControl, mobileMenuControl }) => {
         const cookieData = getCookie("UserData");
         if (cookieData) {
           const parsedData = JSON.parse(cookieData);
-          setUserData(parsedData);
-
-          // Fetch location details if user has a location ID
+          setUserData(parsedData);          // Fetch location details if user has a location ID
           if (parsedData.LOCATION_ID) {
-            const locationResponse = await fetch(`${API_BASE_URL}/location2/${parsedData.LOCATION_ID}`);
+            const locationResponse = await fetch(`${API_BASE_URL}/helpers/locations/${parsedData.LOCATION_ID}`, {
+              credentials: 'include'
+            });
             if (locationResponse.ok) {
               const locationData = await locationResponse.json();
               setUserLocation(locationData);
