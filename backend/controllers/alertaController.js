@@ -175,6 +175,7 @@ const generarNotificacion = async (req, res) => {
   });
 };
 
+
 module.exports = {
   getAlertas,
   deleteAlerta,
