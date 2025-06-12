@@ -3,6 +3,7 @@ import { Route, Routes, Navigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { ToastContainer } from "react-toastify";
 import { useAuth } from './components/AuthHandler';
+import { API_BASE_URL } from './config';
 
 import SignInPage from "./pages/SignInPage";
 import Profile from "./components/UserPerfil";
@@ -301,7 +302,7 @@ const App = () => {
 const DashboardRouter = () => {
   const checkRole = async () => {
     try {
-      const response = await fetch("http://localhost:5000/users/getSession", {
+      const response = await fetch(`${API_BASE_URL}/users/getSession`, {
         credentials: "include",
       });
       
@@ -359,7 +360,7 @@ const DashboardRouter = () => {
 const InventarioRouter = () => {
   const checkRole = async () => {
     try {
-      const response = await fetch("http://localhost:5000/users/getSession", {
+      const response = await fetch(`${API_BASE_URL}/users/getSession`, {
         credentials: "include",
       });
       
@@ -413,7 +414,7 @@ const InventarioRouter = () => {
 const PedidosRouter = () => {
   const checkRole = async () => {
     try {
-      const response = await fetch("http://localhost:5000/users/getSession", {
+      const response = await fetch(`${API_BASE_URL}/users/getSession`, {
         credentials: "include",
       });
       

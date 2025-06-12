@@ -13,27 +13,27 @@ export default defineConfig(({ mode }) => {
     server: {  
       proxy: {
         "/inventory": {
-          target: "http://localhost:5000", 
+          target: backendUrl, 
           changeOrigin: true,
           secure: false,
         },
         "/alertas": {
-          target: "http://localhost:5000",
+          target: backendUrl,
           changeOrigin: true,
           secure: false,
         },
         "/api": {
-          target: "http://localhost:5000",
+          target: backendUrl,
           changeOrigin: true,
           secure: false,
         },
         "/users": {
-          target: "http://localhost:5000",
+          target: backendUrl,
           changeOrigin: true,
           secure: false,
         },
         "/location": {
-          target: "http://localhost:5000",
+          target: backendUrl,
           changeOrigin: true,
           secure: false,
         }

@@ -3,6 +3,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { jwtDecode } from "jwt-decode";
+import { API_BASE_URL } from '../config';
 
 const InvoiceProveedor = () => {
   const [pedidos, setPedidos] = useState([]);
@@ -10,7 +11,6 @@ const InvoiceProveedor = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [showDetails, setShowDetails] = useState(false);
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
 
   useEffect(() => {
     fetchPedidos();
@@ -135,7 +135,7 @@ const InvoiceProveedor = () => {
       }
 
       // Endpoint para aceptar pedido (cambia a "En Reparto")
-      const endpoint = `http://localhost:5000/proveedor/pedido/${id}/aprobar`;
+      const endpoint = `${API_BASE_URL}/proveedor/pedido/${id}/aprobar`;
       
       console.log("Aceptando pedido:", id);
       console.log("Endpoint:", endpoint);
@@ -193,7 +193,7 @@ const InvoiceProveedor = () => {
       }
 
       // Endpoint para rechazar pedido
-      const endpoint = `http://localhost:5000/proveedor/pedido/${id}/rechazar`;
+      const endpoint = `${API_BASE_URL}/proveedor/pedido/${id}/rechazar`;
       
       console.log("Rechazando pedido:", id);
       console.log("Endpoint:", endpoint);

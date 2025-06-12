@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { notify, NotificationType } from "./NotificationService";
 import Swal from "sweetalert2";
+import { API_BASE_URL } from '../config';
 
 const useUserSession = () => {
   const [session, setSession] = useState(null);
@@ -12,7 +13,7 @@ const useUserSession = () => {
   useEffect(() => {
     const fetchSession = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/users/getSession', {
+        const response = await axios.get(`${API_BASE_URL}/users/getSession`, {
           withCredentials: true
         });
         
@@ -116,7 +117,7 @@ const PedidoDueno = () => {
 
         setIsSubmitting(true);
         setError(null);        
-        const response = await axios.post("http://localhost:5000/pedido", pedidoData, {
+        const response = await axios.post(`${API_BASE_URL}/pedido`, pedidoData, {
           withCredentials: true
         });
         
@@ -273,7 +274,7 @@ const TablaProductos = ({ onEnviarPedido, isSubmitting, pedidoEnviado }) => {
       setErrorProductos(null);
       
       try {
-        const response = await axios.get('http://localhost:5000/pedido/warehouse/productos');
+        const response = await axios.get(`${API_BASE_URL}/pedido/warehouse/productos`);
         const productosData = (response.data || []).map(prod => ({
           ...prod,
           cantidad: 0,

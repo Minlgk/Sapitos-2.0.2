@@ -6,11 +6,11 @@ import Swal from "sweetalert2";
 import { Button, Form, Badge } from 'react-bootstrap';
 import { notify, NotificationType } from "./NotificationService";
 import getCookie from '../utils/cookies';
+import { API_BASE_URL } from '../config';
 
 const InvoiceListLayer = () => {
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
   const [searchTerm, setSearchTerm] = useState("");  const [filters, setFilters] = useState({
     proveedor: '',
     estatus: '',
@@ -36,7 +36,7 @@ const InvoiceListLayer = () => {
       
       // Get user data from cookie to determine role and location
       const cookieData = getCookie("UserData");
-      let endpoint = "http://localhost:5000/pedido"; // default endpoint for admin
+      let endpoint = `${API_BASE_URL}/pedido`; // default endpoint for admin
       
       if (cookieData) {
         const userData = typeof cookieData === 'string' ? JSON.parse(cookieData) : cookieData;

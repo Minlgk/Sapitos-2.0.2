@@ -6,6 +6,7 @@ import Swal from "sweetalert2";
 import { Button, Form, Badge } from 'react-bootstrap';
 import { notify, NotificationType } from "./NotificationService";
 import getCookie from '../utils/cookies';
+import { API_BASE_URL } from '../config';
 
 const PedidoListDueno = () => {
   const [pedidos, setPedidos] = useState([]);
@@ -36,7 +37,7 @@ const PedidoListDueno = () => {
       
       // Get user data from cookie to determine role and location
       const cookieData = getCookie("UserData");
-      let endpoint = "http://localhost:5000/pedido"; // default endpoint for admin
+      let endpoint = `${API_BASE_URL}/pedido`; // default endpoint for admin
       
       if (cookieData) {
         const userData = typeof cookieData === 'string' ? JSON.parse(cookieData) : cookieData;
@@ -46,7 +47,7 @@ const PedidoListDueno = () => {
         // If user is "dueno" and has a location, fetch location-specific orders
         if (userRole === 'dueno' && locationId) {
           // For dueño role, we'll filter pedidos by location on frontend since there's no specific backend endpoint yet
-          endpoint = "http://localhost:5000/pedido";
+          endpoint = `${API_BASE_URL}/pedido`;
         }
       }
       
@@ -207,7 +208,7 @@ const PedidoListDueno = () => {
       });
   
       if (result.isConfirmed) {
-        await axios.delete(`http://localhost:5000/pedido/${pedidoId}`);
+        await axios.delete(`${API_BASE_URL}/pedido/${pedidoId}`);
         notify("Pedido eliminado exitosamente", NotificationType.SUCCESS);
         fetchPedidos();
       }
@@ -224,7 +225,7 @@ const PedidoListDueno = () => {
       try {
 
         if (typeof Swal !== 'undefined') {
-          const response = await axios.put(`http://localhost:5000/pedido/${pedido.id.replace("#", "")}/inventario`);
+          const response = await axios.put(`${API_BASE_URL}/pedido/${pedido.id.replace("#", "")}/inventario`);
             
           Swal.fire({
             icon: "success",
@@ -233,7 +234,7 @@ const PedidoListDueno = () => {
           });
           fetchPedidos(); 
         } else {
-          const response = await axios.put(`http://localhost:5000/pedido/${pedido.id.replace("#", "")}/inventario`);
+          const response = await axios.put(`${API_BASE_URL}/pedido/${pedido.id.replace("#", "")}/inventario`);
           alert(response.data.message || `Pedido ${pedido.id} enviado al inventario principal correctamente`);
           fetchPedidos();
         }
@@ -272,7 +273,7 @@ const PedidoListDueno = () => {
     try {
       const pedidoId = pedido.id.replace('#', '');
       
-      await axios.patch(`http://localhost:5000/pedido/${pedidoId}/estatus`, {
+      await axios.patch(`${API_BASE_URL}/pedido/${pedidoId}/estatus`, {
         estatus: "Completado"
       });
       

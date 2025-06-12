@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import axios from "axios";
 import Swal from "sweetalert2";
+import { API_BASE_URL } from '../config';
 
 const OrdenesPymes = () => {
   const [pedidos, setPedidos] = useState([]);
@@ -17,7 +18,7 @@ const OrdenesPymes = () => {
   const fetchPedidos = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/admin/pedidos-pymes', {
+      const response = await fetch(`${API_BASE_URL}/admin/pedidos-pymes`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json'
@@ -83,7 +84,7 @@ const OrdenesPymes = () => {
 
       if (!result.isConfirmed) return;
 
-      const endpoint = `http://localhost:5000/admin/pedido-pyme/${id}/aprobar`;
+      const endpoint = `${API_BASE_URL}/admin/pedido-pyme/${id}/aprobar`;
       const response = await axios.put(endpoint, {}, {
         headers: {
           'Content-Type': 'application/json'
@@ -125,7 +126,7 @@ const OrdenesPymes = () => {
 
       if (!result.isConfirmed) return;
 
-      const endpoint = `http://localhost:5000/admin/pedido-pyme/${id}/rechazar`;
+      const endpoint = `${API_BASE_URL}/admin/pedido-pyme/${id}/rechazar`;
       const response = await axios.put(endpoint, {}, {
         headers: {
           'Content-Type': 'application/json'
@@ -153,7 +154,7 @@ const OrdenesPymes = () => {
   const handleVerDetalles = async (id) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/admin/pedido-pyme/${id}/detalle`,
+        `${API_BASE_URL}/admin/pedido-pyme/${id}/detalle`,
         {
           headers: {
             'Content-Type': 'application/json'
