@@ -204,8 +204,8 @@ const loginUser = (req, res) => {
       const cookieOptions = {
         maxAge: 24 * 60 * 60 * 1000, // 24 horas
         httpOnly: true,
-        secure: isProduction, // True en producción, false en desarrollo
-        sameSite: isProduction ? 'None' : 'Lax', // None en producción, Lax en desarrollo
+        secure: true, // Siempre true para Cloud Foundry
+        sameSite: 'None', // Siempre None para permitir cross-origin
         path: "/"
       };
       
