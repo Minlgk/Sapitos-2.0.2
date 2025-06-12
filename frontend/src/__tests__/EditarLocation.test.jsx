@@ -62,8 +62,8 @@ describe('EditarLocation', () => {
     });
 
     // Cambiar valores
-    fireEvent.change(screen.getByLabelText(/Nombre/i), { target: { value: 'Modificada' } });
-    fireEvent.change(screen.getByLabelText(/Posición X/i), { target: { value: '99' } });
+    fireEvent.change(screen.getByDisplayValue('Ubicación A'), { target: { value: 'Modificada' } });
+    fireEvent.change(screen.getByDisplayValue('10'), { target: { value: '99' } });
 
     fireEvent.click(screen.getByText(/Guardar cambios/i));
 
