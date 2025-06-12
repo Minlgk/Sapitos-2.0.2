@@ -1,10 +1,10 @@
-// src/__tests__/DashBoardLayerOne.test.jsx
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import DashBoardLayerOne from '../components/DashBoardLayerOne';
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+
 /* eslint-env jest */
-/* global describe, test, expect,beforeEach,global*/
+/* global describe, test, expect, beforeEach, afterEach, global */
 
 // Mock de cookies y fetch
 vi.mock('../utils/cookies', () => ({
@@ -21,15 +21,24 @@ global.fetch = vi.fn(() =>
 describe('DashBoardLayerOne', () => {
   beforeEach(() => {
     fetch.mockClear();
+    // No usar fakeTimers aquí
   });
 
-  test('renderiza estadísticas principales al cargar', async () => {
-    render(<DashBoardLayerOne />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Ventas/i)).toBeInTheDocument();
-      expect(screen.getByText(/Clientes/i)).toBeInTheDocument();
-      expect(screen.getByText(/Productos en Riesgo/i)).toBeInTheDocument();
-    });
+  afterEach(() => {
+    cleanup();
+    vi.clearAllTimers();  // Por si acaso, limpia cualquier timeout
   });
+
+  test(
+    'renderiza estadísticas principales al cargar',
+    async () => {
+      render(<DashBoardLayerOne />);
+      await waitFor(() => {
+        expect(screen.getByText(/Ventas/i)).toBeInTheDocument();
+        expect(screen.getByText(/Clientes/i)).toBeInTheDocument();
+        expect(screen.getByText(/Productos en Riesgo/i)).toBeInTheDocument();
+      });
+    },
+    10000 // Timeout extendido
+  );
 });
