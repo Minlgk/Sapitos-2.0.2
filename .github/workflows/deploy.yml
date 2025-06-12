@@ -70,23 +70,16 @@ jobs:
           npm install 
           npm run build
           
-          # Comprobar contenido del Staticfile
-          echo "Contenido del Staticfile:"
-          cat dist/Staticfile
+          # Don't modify the Staticfile - keep the original settings
+          echo "Ensuring proper Staticfile configuration"
+          cat > dist/Staticfile << EOL
+root: .
+pushstate: enabled
+EOL
           
-          # Modificar el Staticfile para eliminar cualquier referencia a root: dist
-          sed -i 's/root: dist/root: ./g' dist/Staticfile
-          echo "Contenido del Staticfile después de modificar:"
-          cat dist/Staticfile
-          
-          # Corregir el archivo nginx.conf - falta punto y coma en directiva listen línea 20
-          echo "Primeras 25 líneas del archivo nginx.conf:"
-          head -n 25 dist/nginx.conf
-          
-          # Arreglar el problema de la línea "listen" sin punto y coma
-          sed -i 's/listen 8080/listen 8080;/g' dist/nginx.conf
-          echo "Líneas del nginx.conf después de la corrección:"
-          grep -n "listen" dist/nginx.conf
+          # Don't override nginx.conf as it's discouraged by the buildpack
+          # Remove custom nginx.conf to use buildpack defaults
+          rm -f dist/nginx.conf
           
           # Change to dist directory and create a simple manifest
           cd dist
@@ -97,6 +90,8 @@ jobs:
           echo "      - staticfile_buildpack" >> manifest.yml
           echo "    routes:" >> manifest.yml
           echo "      - route: sapitos-frontend.cfapps.us10-001.hana.ondemand.com" >> manifest.yml
+          echo "    env:" >> manifest.yml
+          echo "      FORCE_HTTPS: true" >> manifest.yml
           # Push directly from dist directory
           cf push -f manifest.yml
 
