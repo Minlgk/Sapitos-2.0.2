@@ -17,6 +17,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Instalar dependencias del frontend
+        run: |
+          cd frontend
+          npm install
+
+      - name: Ejecutar pruebas con cobertura
+        working-directory: frontend
+        run: npm test
+
           
       - name: Run SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5

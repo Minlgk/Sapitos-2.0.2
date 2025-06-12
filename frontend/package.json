@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest --environment jsdom",
+    "test": "react-scripts test --watchAll=false --coverage",
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
