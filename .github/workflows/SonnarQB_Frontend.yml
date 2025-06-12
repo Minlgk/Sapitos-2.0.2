@@ -33,7 +33,7 @@ jobs:
 
       - name: Ejecutar pruebas con cobertura
         working-directory: frontend
-        run: npm test
+        run: npx vitest run --coverage
 
           
       - name: Run SonarQube Scan
