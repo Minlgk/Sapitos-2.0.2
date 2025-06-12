@@ -79,6 +79,15 @@ jobs:
           echo "Contenido del Staticfile después de modificar:"
           cat dist/Staticfile
           
+          # Corregir el archivo nginx.conf - falta punto y coma en directiva listen línea 20
+          echo "Primeras 25 líneas del archivo nginx.conf:"
+          head -n 25 dist/nginx.conf
+          
+          # Arreglar el problema de la línea "listen" sin punto y coma
+          sed -i 's/listen 8080/listen 8080;/g' dist/nginx.conf
+          echo "Líneas del nginx.conf después de la corrección:"
+          grep -n "listen" dist/nginx.conf
+          
           # Change to dist directory and create a simple manifest
           cd dist
           echo "applications:" > manifest.yml
