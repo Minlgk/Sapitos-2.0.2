@@ -69,8 +69,15 @@ jobs:
           rm -rf dist
           npm install 
           npm run build
-          # El npm run build ya incluye la copia de Staticfile, static.json y nginx.conf
-          # No necesitamos copiar de nuevo el Staticfile
+          
+          # Comprobar contenido del Staticfile
+          echo "Contenido del Staticfile:"
+          cat dist/Staticfile
+          
+          # Modificar el Staticfile para eliminar cualquier referencia a root: dist
+          sed -i 's/root: dist/root: ./g' dist/Staticfile
+          echo "Contenido del Staticfile después de modificar:"
+          cat dist/Staticfile
           
           # Change to dist directory and create a simple manifest
           cd dist
