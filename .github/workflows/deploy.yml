@@ -70,12 +70,12 @@ jobs:
           npm install 
           npm run build
           
-          # Don't modify the Staticfile - keep the original settings
+                    # Don't modify the Staticfile - keep the original settings
           echo "Ensuring proper Staticfile configuration"
-          cat > dist/Staticfile << EOL
-root: .
-pushstate: enabled
-EOL
+          cat > dist/Staticfile << 'EOL'
+          root: .
+          pushstate: enabled
+          EOL
           
           # Don't override nginx.conf as it's discouraged by the buildpack
           # Remove custom nginx.conf to use buildpack defaults
