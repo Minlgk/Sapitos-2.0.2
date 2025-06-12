@@ -695,7 +695,6 @@ const generateToken = (user) => {
 };
 
 
-
 module.exports = { 
   registerUser, 
   loginUser, 

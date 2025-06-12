@@ -69,8 +69,9 @@ jobs:
           rm -rf dist
           npm install 
           npm run build
-          # Copy Staticfile to dist directory
-          cp Staticfile dist/
+          # El npm run build ya incluye la copia de Staticfile, static.json y nginx.conf
+          # No necesitamos copiar de nuevo el Staticfile
+          
           # Change to dist directory and create a simple manifest
           cd dist
           echo "applications:" > manifest.yml
