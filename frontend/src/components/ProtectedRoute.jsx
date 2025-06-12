@@ -5,6 +5,7 @@ import { jwtDecode } from 'jwt-decode';
 const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [otpSettings, setOtpSettings] = useState(null);
   const location = useLocation();
   const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
 
