@@ -1,23 +1,25 @@
 import { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
+import { API_BASE_URL } from '../config';
 
 const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [otpSettings, setOtpSettings] = useState(null);
   const location = useLocation();
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
 
   useEffect(() => {
     const fetchOtpSettings = async () => {
       try {
+        console.log("Fetching OTP settings from:", `${API_BASE_URL}/api/settings/otp`);
         const response = await fetch(`${API_BASE_URL}/api/settings/otp`, {
           credentials: "include",
         });
         
         if (response.ok) {
           const settings = await response.json();
+          console.log("OTP settings received:", settings);
           setOtpSettings(settings);
         } else {
           console.log("Could not fetch OTP settings, defaulting to requireOtp=true");
@@ -30,7 +32,7 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
     };
 
     fetchOtpSettings();
-  }, [API_BASE_URL]);
+  }, []);
 
   useEffect(() => {
     if (otpSettings === null) return;
@@ -50,6 +52,7 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
     
     const checkAuth = async () => {
       try {
+        console.log("Checking auth with API_BASE_URL:", API_BASE_URL);
         // Get session from server
         const response = await fetch(`${API_BASE_URL}/users/getSession`, {
           credentials: "include",
@@ -98,7 +101,7 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
     };
 
     checkAuth();
-  }, [allowedRoles, requireOtp, location.pathname, otpSettings, API_BASE_URL]);
+  }, [otpSettings, allowedRoles]);
 
   if (isLoading) {
     return (

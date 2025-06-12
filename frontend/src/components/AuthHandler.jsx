@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
+import { API_BASE_URL } from '../config';
 
 export const AuthContext = createContext(null);
 
@@ -21,7 +22,6 @@ const AuthHandler = ({ children }) => {
   const [isChecking, setIsChecking] = useState(true);
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
 
   useEffect(() => {
     // Skip check on login and register pages
@@ -33,6 +33,7 @@ const AuthHandler = ({ children }) => {
 
     const checkSession = async () => {
       try {
+        console.log("Checking session with API_BASE_URL:", API_BASE_URL);
         const response = await fetch(`${API_BASE_URL}/users/getSession`, {
           credentials: "include",
         });
