@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import GeneratedContent from '../components/general/child/GeneratedContent';
-
+import '@testing-library/jest-dom';
 import axios from 'axios';
 import { vi } from 'vitest';
 
