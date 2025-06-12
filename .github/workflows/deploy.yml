@@ -30,73 +30,36 @@ jobs:
           echo "API connectivity test completed."
 
       - name: Login to Cloud Foundry
-        env:
-          CF_USERNAME: ${{ secrets.CF_USERNAME }}
-          CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
-          ACCESS_TOKENCLOUD: ${{ secrets.ACCESS_TOKENCLOUD }}
         run: |
           echo "Setting API endpoint to https://api.cf.us10-001.hana.ondemand.com"
           cf api "https://api.cf.us10-001.hana.ondemand.com"
           
           echo "--- DEBUGGING CREDENTIALS ---"
-          echo "CF_USERNAME length: ${#CF_USERNAME}"
-          echo "CF_PASSWORD length: ${#CF_PASSWORD}"
-          echo "First character of username: ${CF_USERNAME:0:1}"
-          echo "Last character of username: ${CF_USERNAME: -1}"
-          echo "CF_USERNAME exact value: '$CF_USERNAME'"
-          echo "Is CF_PASSWORD empty: $(test -z "$CF_PASSWORD" && echo true || echo false)"
+          echo "Using hardcoded credentials"
           echo "-------------------------"
           
           echo "Attempting Cloud Foundry login..."
-          echo "Debug: CF_USERNAME is empty: $(test -z "$CF_USERNAME" && echo true || echo false)"
-          echo "Debug: ACCESS_TOKENCLOUD is empty: $(test -z "$ACCESS_TOKENCLOUD" && echo true || echo false)"
-
-          if [ -n "$CF_USERNAME" ] && [ -n "$CF_PASSWORD" ]; then
-            echo "Attempting login with username/password..."
-            echo "Using command: cf login -u \"$CF_USERNAME\" -p \"REDACTED\""
-            # Try login with detailed error output
-            if CF_TRACE=true cf login -u "$CF_USERNAME" -p "$CF_PASSWORD" 2>&1; then
-              echo "Login successful with username/password."
-            else
-              echo "Username/password login failed."
-              echo "Exit code: $?"
-              echo "Trying again with verbose output..."
-              CF_TRACE=true cf login -u "$CF_USERNAME" -p "$CF_PASSWORD" || echo "CF login failed with exit code: $?"
-              
-              echo "Trying alternative authentication approach..."
-              # Try passing credentials in a different way
-              echo "$CF_PASSWORD" | cf auth "$CF_USERNAME" || echo "Alternative auth method failed with exit code: $?"
-              
-              if [ -n "$ACCESS_TOKENCLOUD" ]; then
-                echo "Attempting login with SSO passcode as fallback..."
-                if cf login --sso-passcode "$ACCESS_TOKENCLOUD"; then
-                  echo "Login successful with SSO passcode."
-                else
-                  echo "SSO passcode login failed after username/password attempt."
-                  echo "Ensure ACCESS_TOKENCLOUD secret is valid."
-                  exit 1
-                fi
-              else
-                echo "No ACCESS_TOKENCLOUD for fallback. Login failed."
-                echo "Ensure CF_USERNAME, CF_PASSWORD, or ACCESS_TOKENCLOUD secrets are correctly set."
-                exit 1
-              fi
-            fi
-          elif [ -n "$ACCESS_TOKENCLOUD" ]; then
-            echo "No username/password provided or they were empty. Attempting login with SSO passcode..."
-            if cf login --sso-passcode "$ACCESS_TOKENCLOUD"; then
-              echo "Login successful with SSO passcode."
-            else
-              echo "SSO passcode login failed."
-              echo "Ensure ACCESS_TOKENCLOUD secret is set correctly in GitHub and is a valid token."
-              if [ -z "$ACCESS_TOKENCLOUD" ]; then
-                  echo "Specifically, the ACCESS_TOKENCLOUD environment variable resolved to an empty string."
-              fi
-              exit 1
-            fi
+          
+          # Hardcoded credentials approach
+          CF_USERNAME="a00836682@tec.mx"
+          CF_PASSWORD="AxelNewPassword2025$"
+          
+          echo "Attempting login with username/password..."
+          echo "Using command: cf login -u \"$CF_USERNAME\" -p \"REDACTED\""
+          # Try login with detailed error output
+          if CF_TRACE=true cf login -u "$CF_USERNAME" -p "$CF_PASSWORD" 2>&1; then
+            echo "Login successful with username/password."
           else
-            echo "Critical: Neither username/password nor SSO passcode are available."
-            echo "Please ensure CF_USERNAME/CF_PASSWORD secrets or the ACCESS_TOKENCLOUD secret are correctly set in GitHub."
+            echo "Username/password login failed."
+            echo "Exit code: $?"
+            echo "Trying again with verbose output..."
+            CF_TRACE=true cf login -u "$CF_USERNAME" -p "$CF_PASSWORD" || echo "CF login failed with exit code: $?"
+            
+            echo "Trying alternative authentication approach..."
+            # Try passing credentials in a different way
+            echo "$CF_PASSWORD" | cf auth "$CF_USERNAME" || echo "Alternative auth method failed with exit code: $?"
+            
+            echo "Login attempts failed."
             exit 1
           fi
 
@@ -144,73 +107,36 @@ jobs:
           echo "API connectivity test completed."
 
       - name: Login to Cloud Foundry
-        env:
-          CF_USERNAME: ${{ secrets.CF_USERNAME }}
-          CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
-          ACCESS_TOKENCLOUD: ${{ secrets.ACCESS_TOKENCLOUD }}
         run: |
           echo "Setting API endpoint to https://api.cf.us10-001.hana.ondemand.com"
           cf api "https://api.cf.us10-001.hana.ondemand.com"
           
           echo "--- DEBUGGING CREDENTIALS ---"
-          echo "CF_USERNAME length: ${#CF_USERNAME}"
-          echo "CF_PASSWORD length: ${#CF_PASSWORD}"
-          echo "First character of username: ${CF_USERNAME:0:1}"
-          echo "Last character of username: ${CF_USERNAME: -1}"
-          echo "CF_USERNAME exact value: '$CF_USERNAME'"
-          echo "Is CF_PASSWORD empty: $(test -z "$CF_PASSWORD" && echo true || echo false)"
+          echo "Using hardcoded credentials"
           echo "-------------------------"
           
           echo "Attempting Cloud Foundry login..."
-          echo "Debug: CF_USERNAME is empty: $(test -z "$CF_USERNAME" && echo true || echo false)"
-          echo "Debug: ACCESS_TOKENCLOUD is empty: $(test -z "$ACCESS_TOKENCLOUD" && echo true || echo false)"
-
-          if [ -n "$CF_USERNAME" ] && [ -n "$CF_PASSWORD" ]; then
-            echo "Attempting login with username/password..."
-            echo "Using command: cf login -u \"$CF_USERNAME\" -p \"REDACTED\""
-            # Try login with detailed error output
-            if CF_TRACE=true cf login -u "$CF_USERNAME" -p "$CF_PASSWORD" 2>&1; then
-              echo "Login successful with username/password."
-            else
-              echo "Username/password login failed."
-              echo "Exit code: $?"
-              echo "Trying again with verbose output..."
-              CF_TRACE=true cf login -u "$CF_USERNAME" -p "$CF_PASSWORD" || echo "CF login failed with exit code: $?"
-              
-              echo "Trying alternative authentication approach..."
-              # Try passing credentials in a different way
-              echo "$CF_PASSWORD" | cf auth "$CF_USERNAME" || echo "Alternative auth method failed with exit code: $?"
-              
-              if [ -n "$ACCESS_TOKENCLOUD" ]; then
-                echo "Attempting login with SSO passcode as fallback..."
-                if cf login --sso-passcode "$ACCESS_TOKENCLOUD"; then
-                  echo "Login successful with SSO passcode."
-                else
-                  echo "SSO passcode login failed after username/password attempt."
-                  echo "Ensure ACCESS_TOKENCLOUD secret is valid."
-                  exit 1
-                fi
-              else
-                echo "No ACCESS_TOKENCLOUD for fallback. Login failed."
-                echo "Ensure CF_USERNAME, CF_PASSWORD, or ACCESS_TOKENCLOUD secrets are correctly set."
-                exit 1
-              fi
-            fi
-          elif [ -n "$ACCESS_TOKENCLOUD" ]; then
-            echo "No username/password provided or they were empty. Attempting login with SSO passcode..."
-            if cf login --sso-passcode "$ACCESS_TOKENCLOUD"; then
-              echo "Login successful with SSO passcode."
-            else
-              echo "SSO passcode login failed."
-              echo "Ensure ACCESS_TOKENCLOUD secret is set correctly in GitHub and is a valid token."
-              if [ -z "$ACCESS_TOKENCLOUD" ]; then
-                  echo "Specifically, the ACCESS_TOKENCLOUD environment variable resolved to an empty string."
-              fi
-              exit 1
-            fi
+          
+          # Hardcoded credentials approach
+          CF_USERNAME="a00836682@tec.mx"
+          CF_PASSWORD="AxelNewPassword2025$"
+          
+          echo "Attempting login with username/password..."
+          echo "Using command: cf login -u \"$CF_USERNAME\" -p \"REDACTED\""
+          # Try login with detailed error output
+          if CF_TRACE=true cf login -u "$CF_USERNAME" -p "$CF_PASSWORD" 2>&1; then
+            echo "Login successful with username/password."
           else
-            echo "Critical: Neither username/password nor SSO passcode are available."
-            echo "Please ensure CF_USERNAME/CF_PASSWORD secrets or the ACCESS_TOKENCLOUD secret are correctly set in GitHub."
+            echo "Username/password login failed."
+            echo "Exit code: $?"
+            echo "Trying again with verbose output..."
+            CF_TRACE=true cf login -u "$CF_USERNAME" -p "$CF_PASSWORD" || echo "CF login failed with exit code: $?"
+            
+            echo "Trying alternative authentication approach..."
+            # Try passing credentials in a different way
+            echo "$CF_PASSWORD" | cf auth "$CF_USERNAME" || echo "Alternative auth method failed with exit code: $?"
+            
+            echo "Login attempts failed."
             exit 1
           fi
 
