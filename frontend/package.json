@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run --coverage",
+    "test": "vitest run --coverage.enabled --coverage.reporter=lcov --coverage.reporter=text",
     "coverage": "vitest run --coverage"
   },
   "dependencies": {
