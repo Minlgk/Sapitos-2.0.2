@@ -1,3 +1,5 @@
+import { COOKIE_CONFIG, IS_CLOUD_FOUNDRY } from '../config';
+
 const getCookie = (name) => {
   try {
     const value = `; ${document.cookie}`;
@@ -35,15 +37,8 @@ const getCookie = (name) => {
 // Función para establecer cookies con configuración para Cloud Foundry
 const setCookie = (name, value, options = {}) => {
   try {
-    // Opciones predeterminadas optimizadas para Cloud Foundry
-    const defaultOptions = {
-      path: "/",
-      secure: true,
-      sameSite: "None"
-    };
-    
-    // Combinar opciones
-    const cookieOptions = { ...defaultOptions, ...options };
+    // Combinar opciones con la configuración global
+    const cookieOptions = { ...COOKIE_CONFIG, ...options };
     
     // Convertir el valor a string si es un objeto
     const stringValue = typeof value === 'object' ? JSON.stringify(value) : value;
@@ -60,6 +55,8 @@ const setCookie = (name, value, options = {}) => {
     if (cookieOptions.sameSite) cookieString += `; samesite=${cookieOptions.sameSite}`;
     if (cookieOptions.httpOnly) cookieString += '; httponly';
     
+    console.log(`Setting cookie: ${name} with options:`, cookieOptions);
+    
     // Establecer la cookie
     document.cookie = cookieString;
     return true;
@@ -73,7 +70,15 @@ const setCookie = (name, value, options = {}) => {
 const removeCookie = (name) => {
   try {
     // Para eliminar una cookie, establecemos una fecha de expiración en el pasado
-    document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=None`;
+    let cookieString = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure`;
+    
+    // Añadir configuración específica para Cloud Foundry
+    if (IS_CLOUD_FOUNDRY) {
+      cookieString += `; samesite=None; domain=${COOKIE_CONFIG.domain}`;
+    }
+    
+    console.log(`Removing cookie: ${name}`);
+    document.cookie = cookieString;
     return true;
   } catch (error) {
     console.error("Error al eliminar cookie:", error);

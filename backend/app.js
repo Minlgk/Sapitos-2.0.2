@@ -26,15 +26,25 @@ const aiRoutes = require("./Ai_OpenAI/aiRoutes");
 const pedidosHelperRoutes = require("./routes/pedidosH");
 const kpiRoutes = require("./routes/kpi.js");
 const adminRoutes = require('./routes/admin');
+const settingsRoutes = require('./routes/settings'); // Importar rutas de configuración
 
 const app = express();
-
-// Log the frontend URL from environment variables
-console.log("FRONTEND_URL from env:", process.env.FRONTEND_URL);
 
 // Detectar si estamos en Cloud Foundry
 const isCloudFoundry = process.env.VCAP_APPLICATION ? true : false;
 console.log("Running in Cloud Foundry:", isCloudFoundry);
+
+// Configurar URLs específicas para Cloud Foundry
+if (isCloudFoundry) {
+  process.env.FRONTEND_URL = process.env.FRONTEND_URL || 'https://sapitos-frontend.cfapps.us10-001.hana.ondemand.com';
+  process.env.BACKEND_URL = process.env.BACKEND_URL || 'https://sapitos-backend.cfapps.us10-001.hana.ondemand.com';
+  process.env.COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || 'cfapps.us10-001.hana.ondemand.com';
+}
+
+// Log the frontend URL from environment variables
+console.log("FRONTEND_URL from env:", process.env.FRONTEND_URL);
+console.log("BACKEND_URL from env:", process.env.BACKEND_URL);
+console.log("COOKIE_DOMAIN from env:", process.env.COOKIE_DOMAIN);
 
 // Obtener la URL del frontend desde las variables de entorno
 let allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -71,7 +81,7 @@ const corsOptions = {
         console.log("Allowing anyway because we're in development mode");
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        callback(null, true); // Permitir todos los orígenes temporalmente para depuración
       }
     }
   },
@@ -133,6 +143,9 @@ app.use("/api/ai", aiRoutes);
 app.use("/helpers", pedidosHelperRoutes);
 app.use("/kpi", kpiRoutes);
 app.use("/admin", adminRoutes);
+
+// Agregar rutas de configuración
+app.use("/api/settings", settingsRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {

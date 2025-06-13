@@ -42,21 +42,38 @@ const SignInPage = () => {
       }
   }, [isAuthenticated, navigate]);
 
-  const handleLogin = async (event) => {
-    event.preventDefault();
+  const handleLogin = async (e) => {
+    e.preventDefault();
     setIsLoading(true);
-    setError('');
-    setErrorMessage("");
+    setError("");
+
+    if (!email || !password) {
+      setErrorMessage("Por favor ingresa tu correo y contraseña");
+      setDialogOpen(true);
+      setIsLoading(false);
+      return;
+    }
 
     try {
+      console.log(`Attempting login to ${API_BASE_URL}/users/login`);
+      
+      // Limpiar cookies antiguas antes de iniciar sesión
+      document.cookie = 'Auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none';
+      document.cookie = 'UserData=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none';
+      
       const response = await fetch(`${API_BASE_URL}/users/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json" 
+        },
         body: JSON.stringify({ correo: email, contrasena: password }),
         credentials: "include",
       });
 
+      console.log("Login response status:", response.status);
       const data = await response.json();
+      console.log("Login response received:", data ? "Data received" : "No data");
 
       if (!response.ok) {
         let message = "Error en el inicio de sesión";
@@ -88,7 +105,22 @@ const SignInPage = () => {
         }
         setIsLoginMode(false);
       } else {
-        window.location.href = '/dashboard';
+        // Verificar si las cookies fueron establecidas correctamente
+        setTimeout(() => {
+          const hasCookies = document.cookie.includes('Auth=') && document.cookie.includes('UserData=');
+          console.log("Cookies set after login:", hasCookies);
+          
+          if (!hasCookies) {
+            console.log("Cookies not set properly, using localStorage fallback");
+            // Si las cookies no se establecieron, usar localStorage como respaldo
+            localStorage.setItem('authToken', data.token);
+            localStorage.setItem('userData', JSON.stringify(data.usuario));
+          }
+          
+          // Indicar que el inicio de sesión está en progreso para evitar redirecciones innecesarias
+          sessionStorage.setItem('loginInProgress', 'true');
+          window.location.href = '/dashboard';
+        }, 500);
       }
 
     } catch (error) {

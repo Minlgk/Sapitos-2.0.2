@@ -18,6 +18,10 @@ const path = require("path");
 
 // Detectar si estamos en Cloud Foundry
 const isCloudFoundry = process.env.VCAP_APPLICATION ? true : false;
+console.log("UserController - Running in Cloud Foundry:", isCloudFoundry);
+console.log("UserController - COOKIE_DOMAIN:", process.env.COOKIE_DOMAIN);
+console.log("UserController - FRONTEND_URL:", process.env.FRONTEND_URL);
+console.log("UserController - BACKEND_URL:", process.env.BACKEND_URL);
 
 // Función para generar opciones de cookie optimizadas para Cloud Foundry
 const getSecureCookieConfig = (httpOnly = true) => {
@@ -32,19 +36,22 @@ const getSecureCookieConfig = (httpOnly = true) => {
   // En Cloud Foundry, necesitamos SameSite=None para cookies cross-origin
   if (isCloudFoundry) {
     cookieConfig.sameSite = 'None';
+    
+    // Usar el dominio específico para Cloud Foundry si está configurado
+    if (process.env.COOKIE_DOMAIN) {
+      cookieConfig.domain = process.env.COOKIE_DOMAIN;
+      console.log(`Using cookie domain: ${process.env.COOKIE_DOMAIN}`);
+    }
   }
   
-  // Solo agregar domain si está definido y no estamos en localhost
-  if (process.env.COOKIE_DOMAIN && process.env.COOKIE_DOMAIN !== 'localhost') {
-    cookieConfig.domain = process.env.COOKIE_DOMAIN;
-  }
-  
+  console.log("Cookie config:", JSON.stringify(cookieConfig));
   return cookieConfig;
 };
 
 const getSession = async (req, res) => {
   try {
-    console.log("Cookies recibidas:", req.cookies);
+    console.log("getSession - Headers:", req.headers);
+    console.log("getSession - Cookies recibidas:", req.cookies);
     const token = req.cookies.Auth;
     
     if (!token) {
@@ -90,10 +97,15 @@ const getSession = async (req, res) => {
       
       // Refrescar la cookie Auth para extender la sesión
       const refreshedToken = generateToken(userData);
-      res.cookie("Auth", refreshedToken, getSecureCookieConfig(true));
+      const cookieOptions = getSecureCookieConfig(true);
+      
+      console.log("Setting Auth cookie with options:", JSON.stringify(cookieOptions));
+      res.cookie("Auth", refreshedToken, cookieOptions);
       
       // Refrescar también la cookie UserData
-      res.cookie("UserData", JSON.stringify(userData), getSecureCookieConfig(false));
+      const userDataOptions = getSecureCookieConfig(false);
+      console.log("Setting UserData cookie with options:", JSON.stringify(userDataOptions));
+      res.cookie("UserData", JSON.stringify(userData), userDataOptions);
       
       // Enviar respuesta al cliente
       return res.json({
@@ -178,6 +190,8 @@ const loginUser = (req, res) => {
     return res.status(400).json({ error: "Correo/Usuario y contraseña son requeridos" });
   }
   
+  console.log("loginUser - Intento de login para:", correo);
+  
   // Clear any existing cookies
   res.clearCookie("Auth", getSecureCookieConfig(true));
   res.clearCookie("UserData", getSecureCookieConfig(false));
@@ -218,10 +232,14 @@ const loginUser = (req, res) => {
       };
       
       // Set cookies with environment-specific settings
-      res.cookie("Auth", token, getSecureCookieConfig(true));
+      const authCookieOptions = getSecureCookieConfig(true);
+      console.log("Setting Auth cookie with options:", JSON.stringify(authCookieOptions));
+      res.cookie("Auth", token, authCookieOptions);
       
       // UserData cookie no es httpOnly para que JS pueda acceder
-      res.cookie("UserData", JSON.stringify(userData), getSecureCookieConfig(false));
+      const userDataCookieOptions = getSecureCookieConfig(false);
+      console.log("Setting UserData cookie with options:", JSON.stringify(userDataCookieOptions));
+      res.cookie("UserData", JSON.stringify(userData), userDataCookieOptions);
       
       // Log de cookies establecidas
       console.log("Cookies establecidas:", {
@@ -377,9 +395,17 @@ const updateUserRecord = async (correo, nombre, rolId, contrasena, username, rfc
 
 const logoutUser = async (req, res) => {
   try {
+    console.log("logoutUser - Cerrando sesión");
+    
     // Limpiar cookies con configuración compatible con CORS
-    res.clearCookie("Auth", getSecureCookieConfig(true));
-    res.clearCookie("UserData", getSecureCookieConfig(false));
+    const authCookieOptions = getSecureCookieConfig(true);
+    const userDataCookieOptions = getSecureCookieConfig(false);
+    
+    console.log("Clearing Auth cookie with options:", JSON.stringify(authCookieOptions));
+    res.clearCookie("Auth", authCookieOptions);
+    
+    console.log("Clearing UserData cookie with options:", JSON.stringify(userDataCookieOptions));
+    res.clearCookie("UserData", userDataCookieOptions);
     
     // Enviar headers adicionales para asegurar que no se cache
     res.set({

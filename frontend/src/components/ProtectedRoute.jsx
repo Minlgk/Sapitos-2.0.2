@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
-import { API_BASE_URL } from '../config';
-import { getCookie, setCookie } from '../utils/cookies';
+import { API_BASE_URL, IS_CLOUD_FOUNDRY, COOKIE_CONFIG } from '../config';
+import { getCookie, setCookie, removeCookie } from '../utils/cookies';
 
 const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -14,8 +14,13 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
   const handleAuthError = () => {
     console.log("Error de autenticación, redirigiendo al login");
     // Limpiar cualquier cookie existente
-    document.cookie = 'Auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none';
-    document.cookie = 'UserData=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none';
+    removeCookie('Auth');
+    removeCookie('UserData');
+    
+    // Limpiar localStorage por si se usó como respaldo
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    
     setIsAuthorized(false);
     setIsLoading(false);
   };
@@ -26,6 +31,9 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
         console.log("Fetching OTP settings from:", `${API_BASE_URL}/api/settings/otp`);
         const response = await fetch(`${API_BASE_URL}/api/settings/otp`, {
           credentials: "include",
+          headers: {
+            'Accept': 'application/json'
+          }
         });
         
         if (response.ok) {
@@ -34,11 +42,11 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
           setOtpSettings(settings);
         } else {
           console.log("Could not fetch OTP settings, defaulting to requireOtp=true");
-          setOtpSettings({ requireOtp: true });
+          setOtpSettings({ required: true });
         }
       } catch (error) {
         console.error("Error fetching OTP settings:", error);
-        setOtpSettings({ requireOtp: true });
+        setOtpSettings({ required: true });
       }
     };
 
@@ -69,12 +77,32 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
         
         console.log("Checking session with API_BASE_URL:", API_BASE_URL);
         console.log("Local cookies check:", { userDataCookie: !!userDataCookie, authCookie });
+        console.log("Is Cloud Foundry:", IS_CLOUD_FOUNDRY);
         
-        // Si no hay cookies, no estamos autenticados
-        if (!authCookie) {
-          console.log("No Auth cookie found locally");
+        // Verificar si tenemos datos en localStorage (respaldo)
+        const authToken = localStorage.getItem('authToken');
+        const userData = localStorage.getItem('userData');
+        const hasLocalStorage = !!(authToken && userData);
+        
+        console.log("LocalStorage check:", { hasLocalStorage });
+        
+        // Si no hay cookies ni localStorage, no estamos autenticados
+        if (!authCookie && !hasLocalStorage) {
+          console.log("No authentication data found");
           handleAuthError();
           return;
+        }
+        
+        // Si tenemos datos en localStorage pero no cookies, intentar restaurar
+        if (!authCookie && hasLocalStorage) {
+          console.log("Restoring cookies from localStorage");
+          try {
+            const parsedUserData = JSON.parse(userData);
+            setCookie("UserData", parsedUserData);
+            // No podemos restaurar Auth cookie porque es httpOnly
+          } catch (error) {
+            console.error("Error parsing userData from localStorage:", error);
+          }
         }
         
         // Get session from server
@@ -86,6 +114,8 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
           }
         });
 
+        console.log("Session response status:", response.status);
+        
         if (!response.ok) {
           console.log("Session validation failed:", response.status);
           handleAuthError();
@@ -93,6 +123,7 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
         }
 
         const data = await response.json();
+        console.log("Session data received:", data);
         
         if (!data.token || !data.usuario) {
           console.log("Invalid session data received");
@@ -101,12 +132,11 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
         }
 
         // Actualizar las cookies locales con los datos más recientes
-        setCookie("UserData", data.usuario, { 
-          maxAge: 24 * 60 * 60, // 24 horas en segundos
-          path: "/",
-          secure: true,
-          sameSite: "None"
-        });
+        setCookie("UserData", data.usuario);
+        
+        // También actualizar localStorage como respaldo
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userData', JSON.stringify(data.usuario));
 
         let userRole;
         try {

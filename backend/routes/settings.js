@@ -5,27 +5,23 @@ const router = express.Router();
  * @swagger
  * /api/settings/otp:
  *   get:
- *     summary: Get OTP settings from environment variables
+ *     summary: Get OTP settings
  *     tags: [Settings]
  *     responses:
  *       200:
- *         description: OTP settings retrieved successfully
- *       500:
- *         description: Server error
+ *         description: OTP settings retrieved
  */
 router.get('/otp', (req, res) => {
-  try {
-    // Get the AUTH_OTP setting from environment variables
-    const requireOtp = process.env.AUTH_OTP === 'true';
-    
-    res.json({
-      requireOtp,
-      message: `OTP verification is ${requireOtp ? 'required' : 'optional'}`
-    });
-  } catch (error) {
-    console.error('Error getting OTP settings:', error);
-    res.status(500).json({ error: 'Server error fetching OTP settings' });
-  }
+  // Obtener configuración de OTP desde variables de entorno
+  const otpEnabled = process.env.AUTH_OTP === 'true';
+  const otpRequired = process.env.AUTH_OTP_REQUIRED === 'true';
+  
+  console.log("OTP settings requested:", { otpEnabled, otpRequired });
+  
+  res.json({
+    enabled: otpEnabled,
+    required: otpRequired
+  });
 });
 
 module.exports = router;
