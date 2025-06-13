@@ -252,8 +252,8 @@ const loginUser = (req, res) => {
         token, 
         user: userData,
         usuario: userData, // Añadir alias 'usuario' para compatibilidad con el frontend
-        otpVerified: user.OTP_VERIFIED === 1 ? true : false,
-        otpRequired: false // Disable OTP for testing
+        otpVerified: true, // Forzar a true para evitar verificación OTP
+        otpRequired: false // Desactivar OTP para testing
       });
     } catch (error) {
       console.error("Error en autenticación:", error);

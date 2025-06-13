@@ -41,12 +41,12 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
           console.log("OTP settings received:", settings);
           setOtpSettings(settings);
         } else {
-          console.log("Could not fetch OTP settings, defaulting to requireOtp=true");
-          setOtpSettings({ required: true });
+          console.log("Could not fetch OTP settings, defaulting to requireOtp=false");
+          setOtpSettings({ required: false });
         }
       } catch (error) {
         console.error("Error fetching OTP settings:", error);
-        setOtpSettings({ required: true });
+        setOtpSettings({ required: false });
       }
     };
 
@@ -105,6 +105,35 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
           }
         }
         
+        // Si tenemos datos en localStorage, podemos considerar al usuario autenticado
+        // y evitar la llamada al servidor que podría fallar por problemas de cookies
+        if (hasLocalStorage) {
+          try {
+            const parsedUserData = JSON.parse(userData);
+            const userRole = parsedUserData.rol || parsedUserData.ROL_ID;
+            
+            console.log("Using localStorage data for authentication, role:", userRole);
+            
+            // Verificar si el rol está permitido
+            const isRoleAuthorized = allowedRoles.length === 0 || allowedRoles.includes(userRole);
+            
+            if (!isRoleAuthorized) {
+              console.log("User role not authorized for this route");
+              setIsAuthorized(false);
+              setIsLoading(false);
+              return;
+            }
+            
+            console.log("User authorized successfully from localStorage");
+            setIsAuthorized(true);
+            setIsLoading(false);
+            return;
+          } catch (error) {
+            console.error("Error using localStorage data:", error);
+          }
+        }
+        
+        // Solo si no pudimos usar localStorage, intentamos con el servidor
         // Get session from server
         const response = await fetch(`${API_BASE_URL}/users/getSession`, {
           credentials: "include",
@@ -159,7 +188,7 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
           return;
         }
 
-        console.log("User authorized successfully");
+        console.log("User authorized successfully from server");
         setIsAuthorized(true);
         setIsLoading(false);
       } catch (error) {

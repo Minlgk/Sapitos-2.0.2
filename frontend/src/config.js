@@ -21,10 +21,12 @@ console.log(`Frontend config - Is Cloud Foundry: ${isCloudFoundry}`);
 const cookieConfig = {
   path: '/',
   secure: true,
-  sameSite: isCloudFoundry ? 'None' : 'Lax'
+  sameSite: 'None' // Siempre usar None para permitir cookies cross-origin
 };
 
-if (isCloudFoundry) {
+// No usar domain en cookies para evitar problemas con subdominios
+// Solo configurar domain si es absolutamente necesario
+if (isCloudFoundry && false) { // Desactivado temporalmente
   cookieConfig.domain = 'cfapps.us10-001.hana.ondemand.com';
 }
 

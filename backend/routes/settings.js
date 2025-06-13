@@ -12,11 +12,11 @@ const router = express.Router();
  *         description: OTP settings retrieved
  */
 router.get('/otp', (req, res) => {
-  // Obtener configuración de OTP desde variables de entorno
-  const otpEnabled = process.env.AUTH_OTP === 'true';
-  const otpRequired = process.env.AUTH_OTP_REQUIRED === 'true';
+  // Forzar que OTP esté desactivado para Cloud Foundry
+  const otpEnabled = false; // Forzar a false para desactivar OTP
+  const otpRequired = false; // Forzar a false para desactivar OTP
   
-  console.log("OTP settings requested:", { otpEnabled, otpRequired });
+  console.log("OTP settings requested - FORCING DISABLED:", { otpEnabled, otpRequired });
   
   res.json({
     enabled: otpEnabled,

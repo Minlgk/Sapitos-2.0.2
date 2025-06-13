@@ -93,35 +93,25 @@ const SignInPage = () => {
         throw new Error("Datos de sesión incompletos");
       }
 
-      // Verificar el dominio del correo
-      const emailDomain = email.toLowerCase().split('@')[1];
-      const allowedDomains = ['gmail.com', 'outlook.com', 'hotmail.com', 'tec.mx'];
-      const requiresOtp = allowedDomains.includes(emailDomain);
-
-      if (data.requiresOtp && requiresOtp) {
-        const otpData = await generateOTP();
-        if (otpData && otpData.secret) {
-          setOtpSecret(otpData.secret);
+      // Ignorar verificación OTP y redirigir directamente al dashboard
+      console.log("Bypassing OTP verification and redirecting to dashboard");
+      
+      // Verificar si las cookies fueron establecidas correctamente
+      setTimeout(() => {
+        const hasCookies = document.cookie.includes('Auth=') && document.cookie.includes('UserData=');
+        console.log("Cookies set after login:", hasCookies);
+        
+        if (!hasCookies) {
+          console.log("Cookies not set properly, using localStorage fallback");
+          // Si las cookies no se establecieron, usar localStorage como respaldo
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('userData', JSON.stringify(data.usuario));
         }
-        setIsLoginMode(false);
-      } else {
-        // Verificar si las cookies fueron establecidas correctamente
-        setTimeout(() => {
-          const hasCookies = document.cookie.includes('Auth=') && document.cookie.includes('UserData=');
-          console.log("Cookies set after login:", hasCookies);
-          
-          if (!hasCookies) {
-            console.log("Cookies not set properly, using localStorage fallback");
-            // Si las cookies no se establecieron, usar localStorage como respaldo
-            localStorage.setItem('authToken', data.token);
-            localStorage.setItem('userData', JSON.stringify(data.usuario));
-          }
-          
-          // Indicar que el inicio de sesión está en progreso para evitar redirecciones innecesarias
-          sessionStorage.setItem('loginInProgress', 'true');
-          window.location.href = '/dashboard';
-        }, 500);
-      }
+        
+        // Indicar que el inicio de sesión está en progreso para evitar redirecciones innecesarias
+        sessionStorage.setItem('loginInProgress', 'true');
+        window.location.href = '/dashboard';
+      }, 500);
 
     } catch (error) {
       setError(error.message || "Error en el inicio de sesión");
