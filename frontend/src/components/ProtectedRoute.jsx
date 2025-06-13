@@ -35,7 +35,17 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
       return;
     }
     
+    // Evitar múltiples validaciones simultáneas
+    const validationInProgress = sessionStorage.getItem('validationInProgress');
+    if (validationInProgress === 'true') {
+      console.log("Validation already in progress, skipping");
+      return;
+    }
+    
     const checkAuth = async () => {
+      // Marcar que la validación está en progreso
+      sessionStorage.setItem('validationInProgress', 'true');
+      
       try {
         // Intentar obtener datos de usuario (primero de cookie, luego de localStorage)
         const userData = getCookie("UserData");
@@ -46,6 +56,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
         if (!userData) {
           console.log("No user data found");
           handleAuthError();
+          sessionStorage.removeItem('validationInProgress');
           return;
         }
         
@@ -55,6 +66,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
         if (!authToken) {
           console.log("No auth token found");
           handleAuthError();
+          sessionStorage.removeItem('validationInProgress');
           return;
         }
         
@@ -67,6 +79,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
           if (decoded.exp && decoded.exp < currentTime) {
             console.log("Token expired");
             handleAuthError();
+            sessionStorage.removeItem('validationInProgress');
             return;
           }
           
@@ -81,29 +94,37 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
             console.log("User role not authorized for this route");
             setIsAuthorized(false);
             setIsLoading(false);
+            sessionStorage.removeItem('validationInProgress');
             return;
           }
           
-          // Intentar validar la sesión con el servidor
-          try {
-            console.log("Validating session with server");
-            const response = await fetch(`${API_BASE_URL}/users/getSession`, {
-              ...fetchConfig
-            });
-            
-            if (response.ok) {
-              console.log("Session validated with server");
-              const data = await response.json();
+          // Intentar validar la sesión con el servidor (solo una vez por carga de página)
+          if (sessionStorage.getItem('sessionValidated') !== 'true') {
+            try {
+              console.log("Validating session with server");
+              const response = await fetch(`${API_BASE_URL}/users/getSession`, {
+                ...fetchConfig
+              });
               
-              // Actualizar datos locales
-              if (data.usuario) {
-                setCookie("UserData", data.usuario);
+              if (response.ok) {
+                console.log("Session validated with server");
+                sessionStorage.setItem('sessionValidated', 'true');
+                const data = await response.json();
+                
+                // Actualizar datos locales
+                if (data.usuario) {
+                  setCookie("UserData", data.usuario);
+                }
+              } else {
+                console.log("Server validation failed, but continuing with local data");
+                sessionStorage.setItem('sessionValidated', 'failed');
               }
-            } else {
-              console.log("Server validation failed, but continuing with local data");
+            } catch (error) {
+              console.log("Error validating session with server, continuing with local data:", error);
+              sessionStorage.setItem('sessionValidated', 'failed');
             }
-          } catch (error) {
-            console.log("Error validating session with server, continuing with local data:", error);
+          } else {
+            console.log("Session already validated, skipping server validation");
           }
           
           console.log("User authorized successfully");
@@ -116,6 +137,9 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
       } catch (error) {
         console.error("Error verificando autenticación:", error);
         handleAuthError();
+      } finally {
+        // Marcar que la validación ha terminado
+        sessionStorage.removeItem('validationInProgress');
       }
     };
 

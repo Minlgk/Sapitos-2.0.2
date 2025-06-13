@@ -8,6 +8,9 @@ import { useAuth } from '../components/AuthHandler';
 import './SignInPage.css';
 import { API_BASE_URL, fetchConfig } from '../config';
 import { setCookie, removeCookie } from '../utils/cookies';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import axios from 'axios';
 
 const SignInPage = () => {
   const { isAuthenticated } = useAuth();
@@ -26,7 +29,28 @@ const SignInPage = () => {
   const [otpSecret, setOtpSecret] = useState("");
   const [resendDisabled, setResendDisabled] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [showOtpField, setShowOtpField] = useState(false);
+  const [otpRequired, setOtpRequired] = useState(true);
   const inputRefs = Array(6).fill(0).map(_ => useRef(null));
+
+  // Verificar si la OTP está desactivada
+  useEffect(() => {
+    const checkOtpSetting = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/settings/otp`, {
+          ...fetchConfig
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setOtpRequired(data.otpRequired);
+        }
+      } catch (error) {
+        console.error('Error checking OTP settings:', error);
+      }
+    };
+
+    checkOtpSetting();
+  }, []);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -58,59 +82,102 @@ const SignInPage = () => {
     try {
       console.log(`Attempting login to ${API_BASE_URL}/users/login`);
       
-      // Limpiar cookies y localStorage
-      removeCookie('Auth');
-      removeCookie('UserData');
+      // Marcar que el login está en progreso
+      sessionStorage.setItem('loginInProgress', 'true');
       
-      const response = await fetch(`${API_BASE_URL}/users/login`, {
-        method: "POST",
-        ...fetchConfig,
-        body: JSON.stringify({ correo: email, contrasena: password }),
-      });
+      // Si la OTP está desactivada o ya se mostró el campo OTP
+      if (!otpRequired || showOtpField) {
+        const loginData = {
+          correo: email,
+          contrasena: password,
+          ...(otpRequired && { otp: otpValues.join('') })
+        };
 
-      console.log("Login response status:", response.status);
-      const data = await response.json();
-      console.log("Login response received:", data ? "Data received" : "No data");
-
-      if (!response.ok) {
-        let message = "Error en el inicio de sesión";
-        if (data.error === "Usuario no encontrado") {
-          message = "El usuario no existe en el sistema";
-        } else if (data.error === "Contraseña incorrecta") {
-          message = "La contraseña ingresada es incorrecta";
-        }
-        setErrorMessage(message);
-        setDialogOpen(true);
-        throw new Error(data.error || message);
-      }
-
-      if (!data.usuario) {
-        setErrorMessage("Datos de sesión incompletos");
-        setDialogOpen(true);
-        throw new Error("Datos de sesión incompletos");
-      }
-
-      // Ignorar verificación OTP y redirigir directamente al dashboard
-      console.log("Bypassing OTP verification and redirecting to dashboard");
-      
-      // Guardar datos en localStorage como respaldo
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('userData', JSON.stringify(data.usuario));
-      
-      // Intentar establecer cookies también
-      setCookie("UserData", data.usuario);
-      
-      // Verificar si las cookies fueron establecidas
-      setTimeout(() => {
-        console.log("Cookies check after login:", document.cookie.includes('UserData='));
+        // Limpiar cualquier sesión anterior
+        sessionStorage.removeItem('sessionValidated');
         
-        // Indicar que el inicio de sesión está en progreso para evitar redirecciones innecesarias
-        sessionStorage.setItem('loginInProgress', 'true');
-        window.location.href = '/dashboard';
-      }, 500);
+        console.log('Enviando solicitud de login al servidor');
+        const response = await fetch(`${API_BASE_URL}/users/login`, {
+          method: "POST",
+          ...fetchConfig,
+          body: JSON.stringify(loginData),
+        });
 
+        console.log("Login response status:", response.status);
+        const data = await response.json();
+        console.log("Login response received:", data ? "Data received" : "No data");
+
+        if (!response.ok) {
+          let message = "Error en el inicio de sesión";
+          if (data.error === "Usuario no encontrado") {
+            message = "El usuario no existe en el sistema";
+          } else if (data.error === "Contraseña incorrecta") {
+            message = "La contraseña ingresada es incorrecta";
+          }
+          setErrorMessage(message);
+          setDialogOpen(true);
+          throw new Error(data.error || message);
+        }
+
+        if (!data.usuario) {
+          setErrorMessage("Datos de sesión incompletos");
+          setDialogOpen(true);
+          throw new Error("Datos de sesión incompletos");
+        }
+
+        // Guardar datos en localStorage como respaldo
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userData', JSON.stringify(data.usuario));
+        
+        // Intentar establecer cookies también
+        setCookie("UserData", data.usuario);
+        
+        // Verificar si las cookies fueron establecidas
+        setTimeout(() => {
+          console.log("Cookies check after login:", document.cookie.includes('UserData='));
+          
+          // Decodificar el token para obtener el rol
+          const decoded = jwtDecode(data.token);
+          const userRole = decoded.rol;
+          
+          toast.success('Inicio de sesión exitoso');
+          
+          // Pequeña pausa para asegurar que los datos se guarden correctamente
+          setTimeout(() => {
+            // Redirigir según el rol
+            if (userRole === 'admin') {
+              navigate('/admin/dashboard');
+            } else {
+              navigate('/dashboard');
+            }
+          }, 500);
+        }, 500);
+
+      } else {
+        // Si la OTP es requerida y es el primer paso
+        console.log('Solicitando OTP');
+        const response = await fetch(`${API_BASE_URL}/users/request-otp`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ correo: email, contrasena: password }),
+          credentials: 'include'
+        });
+
+        if (response.ok) {
+          setShowOtpField(true);
+          toast.info('Se ha enviado un código OTP a su correo');
+        } else {
+          const errorData = await response.json();
+          toast.error(errorData.message || 'Credenciales incorrectas');
+          sessionStorage.removeItem('loginInProgress');
+        }
+      }
     } catch (error) {
-      setError(error.message || "Error en el inicio de sesión");
+      console.error('Error durante el login:', error);
+      toast.error('Error de conexión');
+      sessionStorage.removeItem('loginInProgress');
     } finally {
       setIsLoading(false);
     }
@@ -287,8 +354,6 @@ const SignInPage = () => {
       </section>
     );
   }
-
-
 
   return (
     <section className='auth d-flex align-items-center justify-content-center min-vh-100' style={{
@@ -512,9 +577,9 @@ const SignInPage = () => {
         onClose={handleCloseDialog}
         errorMessage={errorMessage}
       />
+      <ToastContainer position="top-right" autoClose={5000} />
     </section>
   );
 };
-
 
 export default SignInPage;
