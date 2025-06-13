@@ -32,10 +32,10 @@ const app = express();
 // Log the frontend URL from environment variables
 console.log("FRONTEND_URL from env:", process.env.FRONTEND_URL);
 
-// Create a more permissive CORS configuration for debugging purposes
-// WARNING: This is only for testing and development!
+// Usar el dominio del frontend real para CORS
+const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
 const corsOptions = {
-  origin: true, // Allow all origins - for testing only
+  origin: allowedOrigin,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept', 'Cache-Control', 'Pragma', 'Expires'],
@@ -47,12 +47,12 @@ const corsOptions = {
 // Apply CORS middleware
 app.use(cors(corsOptions));
 
-// Handle OPTIONS preflight requests separately to ensure they respond properly
+// Handle OPTIONS preflight requests
 app.options('*', cors(corsOptions));
 
 // Add headers to all responses
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Origin', allowedOrigin);
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin, Accept, Cache-Control, Pragma, Expires');

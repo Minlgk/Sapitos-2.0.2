@@ -198,16 +198,18 @@ const loginUser = (req, res) => {
         LOCATION_ID: user.LOCATION_ID // Añadir explícitamente en mayúsculas
       };
       
-      // Configuración de cookies optimizada para Cloud Foundry
-      const cookieOptions = {
+      // Configuración de cookies optimizada para Cloud Foundry y local
+      let cookieOptions = {
         maxAge: 24 * 60 * 60 * 1000, // 24 horas
         httpOnly: true,
         secure: true,
         sameSite: 'None',
-        path: "/",
-        domain: process.env.COOKIE_DOMAIN || undefined // Permitir configuración de dominio
+        path: "/"
       };
-      
+      // Solo agregar domain si está definido y no estamos en localhost
+      if (process.env.COOKIE_DOMAIN && process.env.COOKIE_DOMAIN !== 'localhost') {
+        cookieOptions.domain = process.env.COOKIE_DOMAIN;
+      }
       // Set cookies with environment-specific settings
       res.cookie("Auth", token, cookieOptions);
       
