@@ -194,19 +194,18 @@ const loginUser = (req, res) => {
         location: user.LOCATION_ID,
         rolName: user.ROLNOMBRE,
         email: user.CORREO,
-        username: user.USERNAME
+        username: user.USERNAME,
+        LOCATION_ID: user.LOCATION_ID // Añadir explícitamente en mayúsculas
       };
       
-      // Determinar ambiente para ajustar configuración de cookies
-      const isProduction = process.env.NODE_ENV === 'production';
-      
-      // Configuración de cookies optimizada para trabajar en múltiples entornos
+      // Configuración de cookies optimizada para Cloud Foundry
       const cookieOptions = {
         maxAge: 24 * 60 * 60 * 1000, // 24 horas
         httpOnly: true,
-        secure: true, // Siempre true para Cloud Foundry
-        sameSite: 'None', // Siempre None para permitir cross-origin
-        path: "/"
+        secure: true,
+        sameSite: 'None',
+        path: "/",
+        domain: process.env.COOKIE_DOMAIN || undefined // Permitir configuración de dominio
       };
       
       // Set cookies with environment-specific settings

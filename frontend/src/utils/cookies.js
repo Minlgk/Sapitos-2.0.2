@@ -1,31 +1,24 @@
 const getCookie = (name) => {
-  const cookies = document.cookie.split(';');
-  
-  for (let cookie of cookies) {
-    const [cookieName, cookieValue] = cookie.trim().split('=');
-    
-    if (cookieName === name) {
-      // Verificar que el valor existe y no es 'undefined'
-      if (!cookieValue || cookieValue === 'undefined') {
-        return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    const cookieValue = parts.pop().split(';').shift();
+    try {
+      // Intentar parsear el valor como JSON
+      const parsedValue = JSON.parse(cookieValue);
+      
+      // Asegurar que location_id esté disponible en ambos formatos
+      if (parsedValue && (parsedValue.LOCATION_ID || parsedValue.locationId)) {
+        parsedValue.LOCATION_ID = parsedValue.LOCATION_ID || parsedValue.locationId;
+        parsedValue.locationId = parsedValue.LOCATION_ID || parsedValue.locationId;
       }
       
-      try {
-        const decodedValue = decodeURIComponent(cookieValue);
-        
-        // Verificar que el valor decodificado no sea 'undefined'
-        if (decodedValue === 'undefined') {
-          return null;
-        }
-        
-        return JSON.parse(decodedValue);
-      } catch (e) {
-        console.error(`Failed to parse '${name}' cookie:`, e);
-        return null;
-      }
+      return parsedValue;
+    } catch (e) {
+      // Si no es JSON, devolver el valor tal cual
+      return cookieValue;
     }
   }
-  
   return null;
 };
 
