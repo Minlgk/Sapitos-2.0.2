@@ -33,7 +33,10 @@ const app = express();
 console.log("FRONTEND_URL from env:", process.env.FRONTEND_URL);
 
 // Usar el dominio del frontend real para CORS
-const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+let allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+if (allowedOrigin.endsWith('/')) {
+  allowedOrigin = allowedOrigin.slice(0, -1);
+}
 const corsOptions = {
   origin: allowedOrigin,
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
