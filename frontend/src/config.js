@@ -26,9 +26,9 @@ const cookieConfig = {
 
 // No usar domain en cookies para evitar problemas con subdominios
 // Solo configurar domain si es absolutamente necesario
-if (isCloudFoundry && false) { // Desactivado temporalmente
-  cookieConfig.domain = 'cfapps.us10-001.hana.ondemand.com';
-}
+// if (isCloudFoundry) {
+//   cookieConfig.domain = 'cfapps.us10-001.hana.ondemand.com';
+// }
 
 console.log(`Frontend config - Cookie config: ${JSON.stringify(cookieConfig)}`);
 
@@ -36,6 +36,18 @@ export const API_BASE_URL = apiBaseUrl;
 export const COOKIE_CONFIG = cookieConfig;
 export const IS_CLOUD_FOUNDRY = isCloudFoundry;
 
+// Configuración por defecto para todas las solicitudes fetch
+export const fetchConfig = {
+  credentials: 'include',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+};
+
 export default {
-  API_BASE_URL
+  API_BASE_URL,
+  COOKIE_CONFIG,
+  IS_CLOUD_FOUNDRY,
+  fetchConfig
 }; 

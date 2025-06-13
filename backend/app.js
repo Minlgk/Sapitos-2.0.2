@@ -76,18 +76,14 @@ const corsOptions = {
       callback(null, true);
     } else {
       console.log(`Origin ${origin} not allowed by CORS policy`);
-      // Permitir de todos modos en desarrollo
-      if (process.env.NODE_ENV === 'development') {
-        console.log("Allowing anyway because we're in development mode");
-        callback(null, true);
-      } else {
-        callback(null, true); // Permitir todos los orígenes temporalmente para depuración
-      }
+      // Permitir de todos modos en desarrollo o para depuración
+      callback(null, true); // Permitir todos los orígenes temporalmente
     }
   },
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept', 'Cache-Control', 'Pragma', 'Expires'],
+  exposedHeaders: ['Set-Cookie'],
   preflightContinue: false,
   maxAge: 86400, // Preflight results cached for 24 hours
   optionsSuccessStatus: 204
@@ -96,18 +92,19 @@ const corsOptions = {
 // Apply CORS middleware
 app.use(cors(corsOptions));
 
-// Handle OPTIONS preflight requests
+// Handle OPTIONS preflight requests explicitly
 app.options('*', cors(corsOptions));
 
 // Add headers to all responses for compatibility
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
-    res.header('Access-Control-Allow-Origin', origin || allowedOrigins[0]);
-  }
+  
+  // Permitir cualquier origen para depuración
+  res.header('Access-Control-Allow-Origin', origin || '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin, Accept, Cache-Control, Pragma, Expires');
+  res.header('Access-Control-Expose-Headers', 'Set-Cookie');
   
   // Configurar SameSite=None para cookies en Cloud Foundry
   if (isCloudFoundry) {

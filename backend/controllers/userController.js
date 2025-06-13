@@ -37,11 +37,8 @@ const getSecureCookieConfig = (httpOnly = true) => {
   if (isCloudFoundry) {
     cookieConfig.sameSite = 'None';
     
-    // Usar el dominio específico para Cloud Foundry si está configurado
-    if (process.env.COOKIE_DOMAIN) {
-      cookieConfig.domain = process.env.COOKIE_DOMAIN;
-      console.log(`Using cookie domain: ${process.env.COOKIE_DOMAIN}`);
-    }
+    // No usar domain para evitar problemas con subdominios
+    // cookieConfig.domain = process.env.COOKIE_DOMAIN;
   }
   
   console.log("Cookie config:", JSON.stringify(cookieConfig));

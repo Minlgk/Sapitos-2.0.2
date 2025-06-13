@@ -6,6 +6,8 @@ import { jwtDecode } from "jwt-decode";
 import ErrorDialog from "../components/ErrorDialog";
 import { useAuth } from '../components/AuthHandler';
 import './SignInPage.css';
+import { API_BASE_URL, fetchConfig } from '../config';
+import { setCookie, removeCookie } from '../utils/cookies';
 
 const SignInPage = () => {
   const { isAuthenticated } = useAuth();
@@ -17,7 +19,6 @@ const SignInPage = () => {
   const [error, setError] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
   const [isLoginMode, setIsLoginMode] = useState(true);
   
   // OTP related states
@@ -57,18 +58,14 @@ const SignInPage = () => {
     try {
       console.log(`Attempting login to ${API_BASE_URL}/users/login`);
       
-      // Limpiar cookies antiguas antes de iniciar sesión
-      document.cookie = 'Auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none';
-      document.cookie = 'UserData=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none';
+      // Limpiar cookies y localStorage
+      removeCookie('Auth');
+      removeCookie('UserData');
       
       const response = await fetch(`${API_BASE_URL}/users/login`, {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json" 
-        },
+        ...fetchConfig,
         body: JSON.stringify({ correo: email, contrasena: password }),
-        credentials: "include",
       });
 
       console.log("Login response status:", response.status);
@@ -96,17 +93,16 @@ const SignInPage = () => {
       // Ignorar verificación OTP y redirigir directamente al dashboard
       console.log("Bypassing OTP verification and redirecting to dashboard");
       
-      // Verificar si las cookies fueron establecidas correctamente
+      // Guardar datos en localStorage como respaldo
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('userData', JSON.stringify(data.usuario));
+      
+      // Intentar establecer cookies también
+      setCookie("UserData", data.usuario);
+      
+      // Verificar si las cookies fueron establecidas
       setTimeout(() => {
-        const hasCookies = document.cookie.includes('Auth=') && document.cookie.includes('UserData=');
-        console.log("Cookies set after login:", hasCookies);
-        
-        if (!hasCookies) {
-          console.log("Cookies not set properly, using localStorage fallback");
-          // Si las cookies no se establecieron, usar localStorage como respaldo
-          localStorage.setItem('authToken', data.token);
-          localStorage.setItem('userData', JSON.stringify(data.usuario));
-        }
+        console.log("Cookies check after login:", document.cookie.includes('UserData='));
         
         // Indicar que el inicio de sesión está en progreso para evitar redirecciones innecesarias
         sessionStorage.setItem('loginInProgress', 'true');
