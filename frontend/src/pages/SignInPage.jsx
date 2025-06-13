@@ -6,7 +6,7 @@ import { jwtDecode } from "jwt-decode";
 import ErrorDialog from "../components/ErrorDialog";
 import { useAuth } from '../components/AuthHandler';
 import './SignInPage.css';
-import { API_BASE_URL, fetchConfig } from '../config';
+import { API_BASE_URL, fetchConfig, preflightConfig } from '../config';
 import { setCookie, removeCookie } from '../utils/cookies';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -41,8 +41,6 @@ const SignInPage = () => {
     }
 
     try {
-      console.log(`Attempting login to ${API_BASE_URL}/users/login`);
-      
       // Marcar que el login está en progreso
       sessionStorage.setItem('loginInProgress', 'true');
       
@@ -50,64 +48,111 @@ const SignInPage = () => {
       sessionStorage.removeItem('sessionValidated');
       
       console.log('Enviando solicitud de login al servidor');
-      const response = await fetch(`${API_BASE_URL}/users/login`, {
-        method: "POST",
+      
+      // Datos de login
+      const loginData = {
+        correo: email,
+        contrasena: password
+      };
+      
+      // Configuración específica para esta solicitud, usando la configuración de fetchConfig
+      const loginConfig = {
         ...fetchConfig,
-        body: JSON.stringify({
-          correo: email,
-          contrasena: password
-        }),
-      });
-
-      console.log("Login response status:", response.status);
-      const data = await response.json();
-      console.log("Login response received:", data ? "Data received" : "No data");
-
-      if (!response.ok) {
-        let message = "Error en el inicio de sesión";
-        if (data.error === "Usuario no encontrado") {
-          message = "El usuario no existe en el sistema";
-        } else if (data.error === "Contraseña incorrecta") {
-          message = "La contraseña ingresada es incorrecta";
+        method: "POST",
+        body: JSON.stringify(loginData),
+      };
+      
+      // Intentar con el endpoint principal
+      const endpoint = `${API_BASE_URL}/users/login`;
+      console.log(`Attempting login to ${endpoint}`);
+      
+      try {
+        // Primero hacer una solicitud preflight OPTIONS para evitar problemas CORS
+        try {
+          console.log('Sending preflight request');
+          await fetch(endpoint, preflightConfig);
+        } catch (preflightError) {
+          console.log('Preflight might have failed, continuing anyway:', preflightError);
         }
-        setErrorMessage(message);
-        setDialogOpen(true);
-        sessionStorage.removeItem('loginInProgress');
-        throw new Error(data.error || message);
-      }
-
-      if (!data.usuario) {
-        setErrorMessage("Datos de sesión incompletos");
-        setDialogOpen(true);
-        sessionStorage.removeItem('loginInProgress');
-        throw new Error("Datos de sesión incompletos");
-      }
-
-      // Guardar datos en localStorage como respaldo
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('userData', JSON.stringify(data.usuario));
-      
-      // Intentar establecer cookies también
-      setCookie("UserData", data.usuario);
-      
-      // Verificar si las cookies fueron establecidas
-      console.log("Cookies check after login:", document.cookie.includes('UserData='));
-      
-      // Decodificar el token para obtener el rol
-      const decoded = jwtDecode(data.token);
-      const userRole = decoded.rol;
-      
-      toast.success('Inicio de sesión exitoso');
-      
-      // Pequeña pausa para asegurar que los datos se guarden correctamente
-      setTimeout(() => {
-        // Redirigir según el rol
-        if (userRole === 'admin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/dashboard');
+        
+        // Luego hacer la solicitud de login real
+        const response = await fetch(endpoint, loginConfig);
+        console.log("Login response status:", response.status);
+        
+        // Si hay un problema con el primer endpoint, probar con el alternativo
+        if (!response.ok) {
+          if (response.status === 404 || response.status === 0) {
+            console.log("First endpoint failed, trying alternative endpoint");
+            const altEndpoint = `${API_BASE_URL}/api/auth/login`;
+            console.log(`Attempting login to ${altEndpoint}`);
+            
+            // Preflight para el endpoint alternativo
+            try {
+              console.log('Sending preflight request for alternative endpoint');
+              await fetch(altEndpoint, preflightConfig);
+            } catch (preflightError) {
+              console.log('Alternative preflight might have failed, continuing anyway:', preflightError);
+            }
+            
+            const altResponse = await fetch(altEndpoint, loginConfig);
+            if (!altResponse.ok) {
+              throw new Error(`Error en el inicio de sesión: ${altResponse.status}`);
+            }
+            
+            const data = await altResponse.json();
+            handleSuccessfulLogin(data);
+            return;
+          } else {
+            let message = "Error en el inicio de sesión";
+            try {
+              const errorData = await response.json();
+              if (errorData.error === "Usuario no encontrado") {
+                message = "El usuario no existe en el sistema";
+              } else if (errorData.error === "Contraseña incorrecta") {
+                message = "La contraseña ingresada es incorrecta";
+              }
+            } catch (e) {
+              console.error("No se pudo parsear la respuesta de error:", e);
+            }
+            
+            setErrorMessage(message);
+            setDialogOpen(true);
+            sessionStorage.removeItem('loginInProgress');
+            throw new Error(message);
+          }
         }
-      }, 500);
+        
+        const data = await response.json();
+        console.log("Login response received:", data ? "Data received" : "No data");
+        handleSuccessfulLogin(data);
+      } catch (networkError) {
+        console.error("Network error during login, trying alternative endpoint:", networkError);
+        
+        // Si hay un error de red, intentar con el endpoint alternativo
+        try {
+          const altEndpoint = `${API_BASE_URL}/api/auth/login`;
+          console.log(`Attempting login to ${altEndpoint} after network error`);
+          
+          // Preflight para el endpoint alternativo
+          try {
+            console.log('Sending preflight request for alternative endpoint');
+            await fetch(altEndpoint, preflightConfig);
+          } catch (preflightError) {
+            console.log('Alternative preflight might have failed, continuing anyway:', preflightError);
+          }
+          
+          const altResponse = await fetch(altEndpoint, loginConfig);
+          if (!altResponse.ok) {
+            throw new Error(`Error en el inicio de sesión: ${altResponse.status}`);
+          }
+          
+          const data = await altResponse.json();
+          handleSuccessfulLogin(data);
+        } catch (altError) {
+          console.error("Error with alternative endpoint:", altError);
+          throw altError;
+        }
+      }
     } catch (error) {
       console.error('Error durante el login:', error);
       toast.error('Error de conexión');
@@ -115,6 +160,42 @@ const SignInPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  // Función para manejar un login exitoso
+  const handleSuccessfulLogin = (data) => {
+    if (!data.token || !data.usuario) {
+      setErrorMessage("Datos de sesión incompletos");
+      setDialogOpen(true);
+      sessionStorage.removeItem('loginInProgress');
+      throw new Error("Datos de sesión incompletos");
+    }
+
+    // Guardar datos en localStorage como respaldo
+    localStorage.setItem('authToken', data.token);
+    localStorage.setItem('userData', JSON.stringify(data.usuario));
+    
+    // Intentar establecer cookies también
+    setCookie("UserData", data.usuario);
+    
+    // Verificar si las cookies fueron establecidas
+    console.log("Cookies check after login:", document.cookie.includes('UserData='));
+    
+    // Decodificar el token para obtener el rol
+    const decoded = jwtDecode(data.token);
+    const userRole = decoded.rol;
+    
+    toast.success('Inicio de sesión exitoso');
+    
+    // Pequeña pausa para asegurar que los datos se guarden correctamente
+    setTimeout(() => {
+      // Redirigir según el rol
+      if (userRole === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    }, 500);
   };
 
   const handleCloseDialog = () => {

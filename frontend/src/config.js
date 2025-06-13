@@ -41,13 +41,29 @@ export const fetchConfig = {
   credentials: 'include',
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+    'Accept': 'application/json',
+    'Origin': window.location.origin,
+    'Access-Control-Request-Method': 'POST, GET, PUT, DELETE, OPTIONS',
+    'Access-Control-Request-Headers': 'Content-Type, Authorization'
+  },
+  mode: 'cors' // Forzar modo CORS
+};
+
+// Configuración para solicitudes preflight OPTIONS
+export const preflightConfig = {
+  method: 'OPTIONS',
+  headers: {
+    'Origin': window.location.origin,
+    'Access-Control-Request-Method': 'POST, GET, PUT, DELETE, OPTIONS',
+    'Access-Control-Request-Headers': 'Content-Type, Authorization'
+  },
+  mode: 'cors'
 };
 
 export default {
   API_BASE_URL,
   COOKIE_CONFIG,
   IS_CLOUD_FOUNDRY,
-  fetchConfig
+  fetchConfig,
+  preflightConfig
 }; 

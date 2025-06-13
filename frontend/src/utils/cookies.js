@@ -1,145 +1,111 @@
-import { COOKIE_CONFIG, IS_CLOUD_FOUNDRY } from '../config';
+import { COOKIE_CONFIG } from '../config';
 
-const getCookie = (name) => {
+// Función para obtener una cookie
+export const getCookie = (name) => {
   try {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
+    // Primero intentar obtener la cookie del navegador
+    const cookies = document.cookie.split(';');
+    const cookie = cookies.find(c => c.trim().startsWith(`${name}=`));
     
-    if (parts.length === 2) {
-      const cookieValue = parts.pop().split(';').shift();
-      
-      // Si la cookie está vacía, intentar obtener del localStorage
-      if (!cookieValue) {
-        console.log(`Cookie ${name} not found, trying localStorage`);
-        if (name === 'UserData') {
-          const localData = localStorage.getItem('userData');
-          if (localData) {
-            try {
-              return JSON.parse(localData);
-            } catch (e) {
-              console.error("Error parsing userData from localStorage:", e);
-            }
-          }
-        }
-        return null;
-      }
-      
+    if (cookie) {
+      console.log(`Cookie ${name} encontrada en el navegador`);
+      let value = cookie.split('=')[1];
       try {
-        // Intentar parsear el valor como JSON
-        const parsedValue = JSON.parse(cookieValue);
-        
-        // Asegurar que location_id esté disponible en ambos formatos
-        if (parsedValue && (parsedValue.LOCATION_ID || parsedValue.locationId)) {
-          parsedValue.LOCATION_ID = parsedValue.LOCATION_ID || parsedValue.locationId;
-          parsedValue.locationId = parsedValue.LOCATION_ID || parsedValue.locationId;
-        }
-        
-        // También guardar en localStorage como respaldo
-        if (name === 'UserData') {
-          localStorage.setItem('userData', JSON.stringify(parsedValue));
-        }
-        
-        return parsedValue;
+        // Si es un JSON, parsearlo
+        return JSON.parse(decodeURIComponent(value));
       } catch (e) {
-        // Si no es JSON, devolver el valor tal cual
-        if (name === 'Auth') {
-          localStorage.setItem('authToken', cookieValue);
-        }
-        return cookieValue;
+        // Si no es un JSON, devolverlo como está
+        return decodeURIComponent(value);
       }
     }
     
-    // Si no se encuentra la cookie, intentar obtener del localStorage
     console.log(`Cookie ${name} not found, trying localStorage`);
-    if (name === 'UserData') {
-      const localData = localStorage.getItem('userData');
-      if (localData) {
-        try {
-          return JSON.parse(localData);
-        } catch (e) {
-          console.error("Error parsing userData from localStorage:", e);
-        }
+    
+    // Si no encuentra la cookie, buscar en localStorage como respaldo
+    const localData = localStorage.getItem(name === 'UserData' ? 'userData' : name);
+    if (localData) {
+      console.log(`Data found in localStorage for ${name}`);
+      try {
+        return JSON.parse(localData);
+      } catch (e) {
+        return localData;
       }
-    } else if (name === 'Auth') {
-      return localStorage.getItem('authToken');
     }
     
+    console.log(`No data found for ${name} in cookies or localStorage`);
     return null;
   } catch (error) {
-    console.error("Error al obtener cookie:", error);
+    console.error(`Error getting cookie ${name}:`, error);
     return null;
   }
 };
 
-// Función para establecer cookies con configuración para Cloud Foundry
-const setCookie = (name, value, options = {}) => {
+// Función para establecer una cookie
+export const setCookie = (name, value, options = {}) => {
   try {
-    // Combinar opciones con la configuración global
+    // Combinar opciones por defecto con las opciones proporcionadas
     const cookieOptions = { ...COOKIE_CONFIG, ...options };
-    
-    // No usar domain para evitar problemas
-    delete cookieOptions.domain;
     
     // Convertir el valor a string si es un objeto
     const stringValue = typeof value === 'object' ? JSON.stringify(value) : value;
     
-    // Construir la string de la cookie
-    let cookieString = `${name}=${stringValue}`;
+    // Construir la cookie
+    let cookie = `${name}=${encodeURIComponent(stringValue)}`;
     
-    // Añadir opciones
-    if (cookieOptions.path) cookieString += `; path=${cookieOptions.path}`;
-    if (cookieOptions.maxAge) cookieString += `; max-age=${cookieOptions.maxAge}`;
-    if (cookieOptions.expires) cookieString += `; expires=${cookieOptions.expires.toUTCString()}`;
-    if (cookieOptions.secure) cookieString += '; secure';
-    if (cookieOptions.sameSite) cookieString += `; samesite=${cookieOptions.sameSite}`;
-    if (cookieOptions.httpOnly) cookieString += '; httponly';
-    
-    console.log(`Setting cookie: ${name} with options:`, cookieOptions);
+    // Añadir opciones de la cookie
+    if (cookieOptions.path) cookie += `; path=${cookieOptions.path}`;
+    if (cookieOptions.domain) cookie += `; domain=${cookieOptions.domain}`;
+    if (cookieOptions.maxAge) cookie += `; max-age=${cookieOptions.maxAge}`;
+    if (cookieOptions.expires) cookie += `; expires=${cookieOptions.expires}`;
+    if (cookieOptions.secure) cookie += '; secure';
+    if (cookieOptions.sameSite) cookie += `; samesite=${cookieOptions.sameSite}`;
     
     // Establecer la cookie
-    document.cookie = cookieString;
+    document.cookie = cookie;
+    console.log(`Cookie ${name} set with options:`, cookieOptions);
     
-    // También guardar en localStorage como respaldo
-    if (name === 'UserData') {
-      localStorage.setItem('userData', stringValue);
-    } else if (name === 'Auth') {
-      localStorage.setItem('authToken', stringValue);
+    // Almacenar también en localStorage como respaldo
+    try {
+      localStorage.setItem(name === 'UserData' ? 'userData' : name, stringValue);
+      console.log(`Data also stored in localStorage for ${name}`);
+    } catch (e) {
+      console.warn(`Couldn't store data in localStorage for ${name}:`, e);
     }
     
     return true;
   } catch (error) {
-    console.error("Error al establecer cookie:", error);
-    return false;
+    console.error(`Error setting cookie ${name}:`, error);
+    
+    // Intentar almacenar solo en localStorage como último recurso
+    try {
+      const stringValue = typeof value === 'object' ? JSON.stringify(value) : value;
+      localStorage.setItem(name === 'UserData' ? 'userData' : name, stringValue);
+      console.log(`Data stored only in localStorage for ${name} (cookie failed)`);
+      return true;
+    } catch (e) {
+      console.error(`Complete failure storing data for ${name}:`, e);
+      return false;
+    }
   }
 };
 
 // Función para eliminar una cookie
-const removeCookie = (name) => {
+export const removeCookie = (name) => {
   try {
-    // Para eliminar una cookie, establecemos una fecha de expiración en el pasado
-    let cookieString = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure`;
+    // Eliminar la cookie estableciendo una fecha de expiración en el pasado
+    document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure`;
+    console.log(`Cookie ${name} removed`);
     
-    // Añadir configuración específica para Cloud Foundry
-    if (IS_CLOUD_FOUNDRY) {
-      cookieString += `; samesite=None`;
-    }
-    
-    console.log(`Removing cookie: ${name}`);
-    document.cookie = cookieString;
-    
-    // También eliminar del localStorage
-    if (name === 'UserData') {
-      localStorage.removeItem('userData');
-    } else if (name === 'Auth') {
-      localStorage.removeItem('authToken');
-    }
+    // Eliminar también de localStorage
+    localStorage.removeItem(name === 'UserData' ? 'userData' : name);
+    console.log(`Data also removed from localStorage for ${name}`);
     
     return true;
   } catch (error) {
-    console.error("Error al eliminar cookie:", error);
+    console.error(`Error removing cookie ${name}:`, error);
     return false;
   }
 };
 
-export { getCookie, setCookie, removeCookie };
-export default getCookie;
+// Exportación por defecto para mantener compatibilidad con código existente
+export default { getCookie, setCookie, removeCookie };
