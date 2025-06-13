@@ -2,12 +2,23 @@ import { useState, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import { API_BASE_URL } from '../config';
+import { getCookie, setCookie } from '../utils/cookies';
 
 const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [otpSettings, setOtpSettings] = useState(null);
   const location = useLocation();
+
+  // Función para manejar errores de autenticación
+  const handleAuthError = () => {
+    console.log("Error de autenticación, redirigiendo al login");
+    // Limpiar cualquier cookie existente
+    document.cookie = 'Auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none';
+    document.cookie = 'UserData=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; samesite=none';
+    setIsAuthorized(false);
+    setIsLoading(false);
+  };
 
   useEffect(() => {
     const fetchOtpSettings = async () => {
@@ -52,33 +63,59 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
     
     const checkAuth = async () => {
       try {
-        console.log("Checking auth with API_BASE_URL:", API_BASE_URL);
+        // Primero verificar si tenemos cookies locales
+        const userDataCookie = getCookie("UserData");
+        const authCookie = document.cookie.includes('Auth=');
+        
+        console.log("Checking session with API_BASE_URL:", API_BASE_URL);
+        console.log("Local cookies check:", { userDataCookie: !!userDataCookie, authCookie });
+        
+        // Si no hay cookies, no estamos autenticados
+        if (!authCookie) {
+          console.log("No Auth cookie found locally");
+          handleAuthError();
+          return;
+        }
+        
         // Get session from server
         const response = await fetch(`${API_BASE_URL}/users/getSession`, {
           credentials: "include",
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
         });
 
         if (!response.ok) {
-          setIsAuthorized(false);
-          setIsLoading(false);
+          console.log("Session validation failed:", response.status);
+          handleAuthError();
           return;
         }
 
         const data = await response.json();
         
-        if (!data.token) {
-          setIsAuthorized(false);
-          setIsLoading(false);
+        if (!data.token || !data.usuario) {
+          console.log("Invalid session data received");
+          handleAuthError();
           return;
         }
+
+        // Actualizar las cookies locales con los datos más recientes
+        setCookie("UserData", data.usuario, { 
+          maxAge: 24 * 60 * 60, // 24 horas en segundos
+          path: "/",
+          secure: true,
+          sameSite: "None"
+        });
 
         let userRole;
         try {
           const decoded = jwtDecode(data.token);
           userRole = decoded.rol;
+          console.log("User role from token:", userRole);
         } catch (error) {
-          setIsAuthorized(false);
-          setIsLoading(false);
+          console.error("Error decoding token:", error);
+          handleAuthError();
           return;
         }
 
@@ -86,38 +123,33 @@ const ProtectedRoute = ({ children, allowedRoles = [], requireOtp = true }) => {
         const isRoleAuthorized = allowedRoles.length === 0 || allowedRoles.includes(userRole);
         
         if (!isRoleAuthorized) {
+          console.log("User role not authorized for this route");
           setIsAuthorized(false);
           setIsLoading(false);
           return;
         }
 
+        console.log("User authorized successfully");
         setIsAuthorized(true);
         setIsLoading(false);
       } catch (error) {
         console.error("Error verificando autenticación:", error);
-        setIsAuthorized(false);
-        setIsLoading(false);
+        handleAuthError();
       }
     };
 
     checkAuth();
-  }, [otpSettings, allowedRoles]);
+  }, [allowedRoles, location.pathname, otpSettings]);
 
   if (isLoading) {
     return (
-      <div className="loading-container d-flex justify-content-center align-items-center" style={{ minHeight: "100vh" }}>
-        <div className="text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Verificando autenticación...</span>
-          </div>
-          <p className="mt-3">Verificando autenticación...</p>
-        </div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   if (!isAuthorized) {
-    // Redirigir al login y guardar la ubicación intentada
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 

@@ -32,13 +32,49 @@ const app = express();
 // Log the frontend URL from environment variables
 console.log("FRONTEND_URL from env:", process.env.FRONTEND_URL);
 
-// Usar el dominio del frontend real para CORS
+// Detectar si estamos en Cloud Foundry
+const isCloudFoundry = process.env.VCAP_APPLICATION ? true : false;
+console.log("Running in Cloud Foundry:", isCloudFoundry);
+
+// Obtener la URL del frontend desde las variables de entorno
 let allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
 if (allowedOrigin.endsWith('/')) {
   allowedOrigin = allowedOrigin.slice(0, -1);
 }
+
+// Configurar múltiples orígenes permitidos para mayor flexibilidad
+const allowedOrigins = [
+  allowedOrigin,
+  'https://sapitos-frontend.cfapps.us10-001.hana.ondemand.com',
+  'https://sapitos-frontend.cfapps.us10.hana.ondemand.com',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+console.log("Allowed origins for CORS:", allowedOrigins);
+
+// Configuración CORS optimizada para Cloud Foundry
 const corsOptions = {
-  origin: allowedOrigin,
+  origin: function (origin, callback) {
+    // Permitir solicitudes sin origen (como aplicaciones móviles o curl)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Verificar si el origen está en la lista de permitidos
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log(`Origin ${origin} not allowed by CORS policy`);
+      // Permitir de todos modos en desarrollo
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Allowing anyway because we're in development mode");
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept', 'Cache-Control', 'Pragma', 'Expires'],
@@ -53,66 +89,66 @@ app.use(cors(corsOptions));
 // Handle OPTIONS preflight requests
 app.options('*', cors(corsOptions));
 
-// Add headers to all responses
+// Add headers to all responses for compatibility
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', allowedOrigin);
+  const origin = req.headers.origin;
+  if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+    res.header('Access-Control-Allow-Origin', origin || allowedOrigins[0]);
+  }
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin, Accept, Cache-Control, Pragma, Expires');
+  
+  // Configurar SameSite=None para cookies en Cloud Foundry
+  if (isCloudFoundry) {
+    res.header('Set-Cookie', 'SameSite=None; Secure');
+  }
+  
   next();
 });
 
-app.use(cookieParser()); 
+// Usar cookie-parser con configuración segura
+app.use(cookieParser());
 
 // Make sure Express properly parses JSON requests
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// OTP routes
-app.use("/api/otp", otpRoutes); 
-const settingsRoutes = require("./routes/settings");
-app.use("/api/settings", settingsRoutes);
+// Configurar rutas para documentación Swagger
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 // login, register, and logout routes
 app.use("/users", userRoutes);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
-app.use("/users/getUsers", userRoutes); 
-app.use("/users/logoutUser", userRoutes);
-app.use("/users/logoutUser", userRoutes);
-
-// ML model routes
-app.use("/ml", mlRoutes);
-
-// inventory routes
 app.use("/inventory", inventoryRoutes);
-
-// roles routes
-app.use("/rol", rolRoutes);
-
-// locations routes
-app.use("/location2", locationRoutes); 
-
-// alertas routes
-app.use("/alertas", alertasRoutes);
-
-// articulo routes
-app.use("/articulo", articuloRoutes);
-
-// pedidos routes
 app.use("/pedido", pedidoRoutes);
-app.use("/proveedores", pedidoRoutes);
 app.use("/pedidosH", pedidosHRoutes);
-app.use("/proveedor", pedidosProveedorRoutes);
-app.use("/proveedores", pedidoRoutes);
-app.use("/pedidosH", pedidosHRoutes);
-app.use("/proveedor", pedidosProveedorRoutes);
-app.use('/admin', adminRoutes);
-
-// rutas para el asistente de IA 
+app.use("/pedidosProveedor", pedidosProveedorRoutes);
+app.use("/rol", rolRoutes);
+app.use("/location2", locationRoutes);
+app.use("/ml", mlRoutes);
+app.use("/articulo", articuloRoutes);
+app.use("/api/otp", otpRoutes);
+app.use("/api/alertas", alertasRoutes);
 app.use("/api/ai", aiRoutes);
-
 app.use("/helpers", pedidosHelperRoutes);
 app.use("/kpi", kpiRoutes);
+app.use("/admin", adminRoutes);
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "UP", timestamp: new Date().toISOString() });
+});
+
+// Root endpoint for API information
+app.get("/", (req, res) => {
+  res.json({
+    message: "Sapitos API",
+    version: "2.0.2",
+    documentation: "/api-docs",
+    status: "running",
+    environment: process.env.NODE_ENV || "development"
+  });
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {

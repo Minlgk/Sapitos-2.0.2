@@ -16,69 +16,100 @@ const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const path = require("path");
 
-const getSession = async (req, res) => {
-  const token = req.cookies.Auth;
-  
-  if (!token) {
-    return res.status(401).json({ error: "Not authenticated" });
-  }
+// Detectar si estamos en Cloud Foundry
+const isCloudFoundry = process.env.VCAP_APPLICATION ? true : false;
 
+// Función para generar opciones de cookie optimizadas para Cloud Foundry
+const getSecureCookieConfig = (httpOnly = true) => {
+  // Configuración base para todas las cookies
+  const cookieConfig = {
+    maxAge: 24 * 60 * 60 * 1000, // 24 horas
+    httpOnly: httpOnly,
+    secure: true,
+    path: "/"
+  };
+  
+  // En Cloud Foundry, necesitamos SameSite=None para cookies cross-origin
+  if (isCloudFoundry) {
+    cookieConfig.sameSite = 'None';
+  }
+  
+  // Solo agregar domain si está definido y no estamos en localhost
+  if (process.env.COOKIE_DOMAIN && process.env.COOKIE_DOMAIN !== 'localhost') {
+    cookieConfig.domain = process.env.COOKIE_DOMAIN;
+  }
+  
+  return cookieConfig;
+};
+
+const getSession = async (req, res) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.id || decoded.USUARIO_ID;
+    console.log("Cookies recibidas:", req.cookies);
+    const token = req.cookies.Auth;
     
-    // Verificar el estado de OTP en la base de datos
-    connection.exec(
-      `SELECT OTP_VERIFIED, OTP_VERIFIED_AT FROM "DBADMIN"."USUARIO2" WHERE USUARIO_ID = ?`,
-      [userId],
-      (err, results) => {
-        if (err) {
-          console.error('Error checking OTP verification status:', err);
-          return res.status(500).json({ error: "Server error" });
-        }
-        
-        let otpVerified = false;
-        let otpVerifiedAt = null;
-        let otpExpired = true;
-        
-        // Si hay resultados, verificar estado de OTP
-        if (results && results.length > 0) {
-          const user = results[0];
-          otpVerified = !!user.OTP_VERIFIED;
-          otpVerifiedAt = user.OTP_VERIFIED_AT;
-          
-          // Verificar si la verificación OTP tiene menos de 24 horas
-          if (otpVerified && otpVerifiedAt) {
-            const now = new Date();
-            const verifiedAt = new Date(otpVerifiedAt);
-            const hoursDiff = (now - verifiedAt) / (1000 * 60 * 60);
-            otpExpired = hoursDiff > 24;
-          }
-        }
-          res.json({
-          token: token,
-          otpVerified: otpVerified,
-          otpExpired: otpExpired,
-          usuario: {
-            id: decoded.id || decoded.USUARIO_ID,
-            nombre: decoded.nombre || decoded.NOMBRE,
-            rol: decoded.rol || decoded.ROL,
-            correo: decoded.correo || decoded.CORREO,
-            username: decoded.username || decoded.USERNAME,
-            locationId: decoded.locationId || decoded.LOCATION_ID,
-            LOCATION_ID: decoded.locationId || decoded.LOCATION_ID // Agregar también en formato mayúsculas
-          }
-        });
+    if (!token) {
+      console.log("No se encontró token de autenticación");
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    // Verificar el token JWT
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("Token verificado:", decoded);
+    
+    // Obtener datos adicionales del usuario desde la base de datos
+    const query = "SELECT OTP_VERIFIED, OTP_VERIFIED_AT FROM Usuario2 WHERE USUARIO_ID = ?";
+    
+    connection.exec(query, [decoded.id], (err, results) => {
+      if (err) {
+        console.error("Error al obtener datos del usuario:", err);
+        return res.status(500).json({ error: "Error interno del servidor" });
       }
-    );
-  } catch (err) {
-    // Si el token es inválido, limpiar la cookie con configuración compatible con CORS
-    res.clearCookie("Auth", { 
-      path: "/", 
-      httpOnly: true, 
-      secure: true,
-      sameSite: "None" 
+      
+      const otpStatus = results && results.length > 0 ? results[0] : { OTP_VERIFIED: 0, OTP_VERIFIED_AT: null };
+      const otpVerified = otpStatus.OTP_VERIFIED === 1;
+      
+      // Verificar si el OTP ha expirado (más de 30 días)
+      let otpExpired = false;
+      if (otpVerified && otpStatus.OTP_VERIFIED_AT) {
+        const verifiedDate = new Date(otpStatus.OTP_VERIFIED_AT);
+        const now = new Date();
+        const diffDays = Math.floor((now - verifiedDate) / (1000 * 60 * 60 * 24));
+        otpExpired = diffDays > 30;
+      }
+      
+      // Crear objeto de usuario para la respuesta
+      const userData = {
+        id: decoded.id,
+        nombre: decoded.nombre,
+        correo: decoded.correo,
+        rol: decoded.rol,
+        username: decoded.username,
+        locationId: decoded.locationId,
+        LOCATION_ID: decoded.locationId // Añadir explícitamente en mayúsculas
+      };
+      
+      // Refrescar la cookie Auth para extender la sesión
+      const refreshedToken = generateToken(userData);
+      res.cookie("Auth", refreshedToken, getSecureCookieConfig(true));
+      
+      // Refrescar también la cookie UserData
+      res.cookie("UserData", JSON.stringify(userData), getSecureCookieConfig(false));
+      
+      // Enviar respuesta al cliente
+      return res.json({
+        token: refreshedToken,
+        usuario: userData,
+        otpVerified,
+        otpExpired,
+        otpRequired: process.env.AUTH_OTP === 'true'
+      });
     });
+  } catch (err) {
+    console.error("Error al verificar token:", err);
+    // Si el token es inválido, limpiar la cookie con configuración compatible con CORS
+    res.clearCookie("Auth", getSecureCookieConfig(true));
+    res.clearCookie("UserData", getSecureCookieConfig(false));
+    
     return res.status(401).json({ error: "Invalid token" });
   }
 };
@@ -147,21 +178,9 @@ const loginUser = (req, res) => {
     return res.status(400).json({ error: "Correo/Usuario y contraseña son requeridos" });
   }
   
-  // Clear any existing cookies with proper CORS attributes
-  res.clearCookie("Auth", { 
-    path: "/", 
-    httpOnly: true, 
-    secure: true,
-    sameSite: "None" 
-  });
-  
-  res.clearCookie("UserData", {
-    path: "/",
-    secure: true,
-    sameSite: "None"
-  });
-  
-  res.clearCookie("UserData");
+  // Clear any existing cookies
+  res.clearCookie("Auth", getSecureCookieConfig(true));
+  res.clearCookie("UserData", getSecureCookieConfig(false));
   
   const query = `SELECT u.*, r.Nombre as RolNombre FROM Usuario2 u 
                 LEFT JOIN Rol2 r ON u.Rol_ID = r.Rol_ID 
@@ -198,24 +217,17 @@ const loginUser = (req, res) => {
         LOCATION_ID: user.LOCATION_ID // Añadir explícitamente en mayúsculas
       };
       
-      // Configuración de cookies optimizada para Cloud Foundry y local
-      let cookieOptions = {
-        maxAge: 24 * 60 * 60 * 1000, // 24 horas
-        httpOnly: true,
-        secure: true,
-        sameSite: 'None',
-        path: "/"
-      };
-      // Solo agregar domain si está definido y no estamos en localhost
-      if (process.env.COOKIE_DOMAIN && process.env.COOKIE_DOMAIN !== 'localhost') {
-        cookieOptions.domain = process.env.COOKIE_DOMAIN;
-      }
       // Set cookies with environment-specific settings
-      res.cookie("Auth", token, cookieOptions);
+      res.cookie("Auth", token, getSecureCookieConfig(true));
       
       // UserData cookie no es httpOnly para que JS pueda acceder
-      const userDataOptions = {...cookieOptions, httpOnly: false};
-      res.cookie("UserData", JSON.stringify(userData), userDataOptions);
+      res.cookie("UserData", JSON.stringify(userData), getSecureCookieConfig(false));
+      
+      // Log de cookies establecidas
+      console.log("Cookies establecidas:", {
+        Auth: token.substring(0, 20) + "...",
+        UserData: JSON.stringify(userData).substring(0, 50) + "..."
+      });
       
       // Agrega el token también en la respuesta JSON para mayor compatibilidad
       return res.json({ 
@@ -365,25 +377,9 @@ const updateUserRecord = async (correo, nombre, rolId, contrasena, username, rfc
 
 const logoutUser = async (req, res) => {
   try {
-    // Limpiar la cookie Auth con configuración compatible con CORS
-    res.clearCookie("Auth", { 
-      path: "/", 
-      httpOnly: true, 
-      secure: true,
-      sameSite: "None" 
-    });
-    
-    // También intentar limpiar sin las opciones por si acaso
-    res.clearCookie("Auth");
-    
-    // Limpiar la cookie UserData con configuración compatible con CORS
-    res.clearCookie("UserData", {
-      path: "/",
-      secure: true,
-      sameSite: "None"
-    });
-    
-    res.clearCookie("UserData");
+    // Limpiar cookies con configuración compatible con CORS
+    res.clearCookie("Auth", getSecureCookieConfig(true));
+    res.clearCookie("UserData", getSecureCookieConfig(false));
     
     // Enviar headers adicionales para asegurar que no se cache
     res.set({
@@ -680,22 +676,20 @@ const getOrganizationUsers = async (req, res) => {
 
 // Función para generar token JWT
 const generateToken = (user) => {
-  return jwt.sign(
-    {
-      id: user.USUARIO_ID,
-      nombre: user.NOMBRE,
-      correo: user.CORREO,
-      rol: user.ROLNOMBRE || null,
-      username: user.USERNAME || null,
-      locationId: user.LOCATION_ID || null,
-      authTimestamp: Date.now()
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: '24h' }
-  );
+  const payload = {
+    id: user.USUARIO_ID || user.id,
+    nombre: user.NOMBRE || user.nombre || user.name,
+    correo: user.CORREO || user.correo || user.email,
+    rol: user.ROL_ID || user.rol,
+    username: user.USERNAME || user.username,
+    locationId: user.LOCATION_ID || user.locationId,
+    authTimestamp: Date.now()
+  };
+
+  return jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: "24h",
+  });
 };
-
-
 
 module.exports = { 
   registerUser, 

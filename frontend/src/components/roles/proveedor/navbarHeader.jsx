@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import UserMenu from "../../general/userMenu";
+import { getCookie, setCookie } from "../../../utils/cookies";
 
 const NavbarHeader = ({ sidebarActive, sidebarControl, mobileMenuControl }) => {
   const [userData, setUserData] = useState(null);
@@ -8,21 +9,53 @@ const NavbarHeader = ({ sidebarActive, sidebarControl, mobileMenuControl }) => {
   const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://sapitos-backend.cfapps.us10-001.hana.ondemand.com";
   const [userLocation, setUserLocation] = useState(null);
 
-  useEffect(() => {
-    const fetchUserSession = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/users/getSession`, {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
+  const fetchUserData = async () => {
+    try {
+      // Primero intentamos obtener los datos de la cookie
+      const cookieData = getCookie("UserData");
+      console.log("Cookie data:", cookieData);
+      
+      if (cookieData) {
+        // Si cookieData es un string, intentar parsearlo
+        const parsedData = typeof cookieData === 'string' ? JSON.parse(cookieData) : cookieData;
+        console.log("Parsed user data from cookie:", parsedData);
+        setUserData(parsedData);
 
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Sesión obtenida:", data);
-          
+        // Fetch location details if user has a location ID
+        if (parsedData.LOCATION_ID) {
+          await fetchLocationData(parsedData.LOCATION_ID);
+        } else {
+          console.log("No LOCATION_ID found in user data");
+          setLoading(false);
+        }
+      } else {
+        console.log("No UserData cookie found, fetching from server");
+        // Si no hay cookie, intentamos obtener la sesión del servidor
+        await fetchSessionFromServer();
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      setLoading(false);
+    }
+  };
+
+  const fetchSessionFromServer = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/getSession`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Session data from server:", data);
+        
+        if (data.usuario) {
+          // Formatear los datos del usuario para mayor compatibilidad
           const formattedUserData = {
             id: data.usuario.id,
             NOMBRE: data.usuario.nombre,
@@ -34,27 +67,65 @@ const NavbarHeader = ({ sidebarActive, sidebarControl, mobileMenuControl }) => {
             token: data.token
           };
           
-          setUserData(formattedUserData);          // Fetch location details if user has a location ID
+          // Guardar en cookie para futuras solicitudes
+          setCookie("UserData", formattedUserData, { 
+            maxAge: 24 * 60 * 60, // 24 horas en segundos
+            path: "/",
+            secure: true,
+            sameSite: "None"
+          });
+          
+          setUserData(formattedUserData);
+          
+          // Fetch location if available
           if (formattedUserData.LOCATION_ID) {
-            const locationResponse = await fetch(`${API_BASE_URL}/location2/${formattedUserData.LOCATION_ID}`);
-            if (locationResponse.ok) {
-              const locationData = await locationResponse.json();
-              setUserLocation(locationData);
-            }
+            await fetchLocationData(formattedUserData.LOCATION_ID);
+          } else {
+            setLoading(false);
           }
         } else {
-          console.log("No hay sesión válida");
-          setUserData(null);
+          console.log("No user data in session response");
+          setLoading(false);
         }
-      } catch (error) {
-        console.error("Error obteniendo sesión:", error);
-        setUserData(null);
-      } finally {
+      } else {
+        console.log("Failed to fetch session:", response.status);
         setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching session:", error);
+      setLoading(false);
+    }
+  };
 
-    fetchUserSession();
+  const fetchLocationData = async (locationId) => {
+    try {
+      console.log("Fetching location for ID:", locationId);
+      const locationResponse = await fetch(`${API_BASE_URL}/helpers/locations/${locationId}`, {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      console.log("Location response status:", locationResponse.status);
+      
+      if (locationResponse.ok) {
+        const locationData = await locationResponse.json();
+        console.log("Location data received:", locationData);
+        setUserLocation(locationData);
+      } else {
+        const errorText = await locationResponse.text();
+        console.error("Error fetching location:", errorText);
+      }
+    } catch (error) {
+      console.error("Error fetching location data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserData();
   }, []);
 
   // Construir la ruta de la imagen de perfil usando el correo del usuario
